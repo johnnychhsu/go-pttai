@@ -30,24 +30,19 @@ import (
  * Peer
  **********/
 
-type ErrWrapper struct {
-	err error
-}
-
 func (p *BasePtt) HandlePeer(peer *PttPeer) error {
 	log.Debug("HandlePeer: start", "peer", peer)
 
-	errWrapper := &ErrWrapper{}
-	errWrapper.err = peer.Handshake(p.networkID)
-	log.Debug("HandlePeer: after Handshake", "e", errWrapper.err)
-	if errWrapper.err != nil {
-		return errWrapper.err
+	err := peer.Handshake(p.networkID)
+	log.Debug("HandlePeer: after Handshake", "e", err)
+	if err != nil {
+		return err
 	}
-	defer log.Debug("HandlePeer: done", "err", errWrapper, "peer", peer)
+	defer log.Debug("HandlePeer: done", "peer", peer)
 
-	errWrapper.err = p.AddPeer(peer)
-	if errWrapper.err != nil {
-		return errWrapper.err
+	err = p.AddPeer(peer)
+	if err != nil {
+		return err
 	}
 	defer p.RemovePeer(peer)
 
@@ -55,14 +50,14 @@ func (p *BasePtt) HandlePeer(peer *PttPeer) error {
 
 	log.Debug("HandlePeer: to for-loop", "peer", peer)
 	for {
-		errWrapper.err = p.HandleMessageWrapper(peer)
-		if errWrapper.err != nil {
-			log.Error("HandlePeer: message handling failed", "e", errWrapper.err)
+		err = p.HandleMessageWrapper(peer)
+		if err != nil {
+			log.Error("HandlePeer: message handling failed", "e", err)
 			break
 		}
 	}
 
-	return errWrapper.err
+	return err
 }
 
 /*
@@ -399,21 +394,21 @@ func (p *BasePtt) DropAnyPeer(peerType PeerType, isLocked bool) error {
 
 	log.Debug("DropAnyPeer: start", "peerType", peerType)
 	if len(p.randomPeers) != 0 {
-		return p.DropPeer(p.randomPeers)
+		return p.dropAnyPeerCore(p.randomPeers)
 	}
 	if peerType == PeerTypeRandom {
 		return p2p.DiscTooManyPeers
 	}
 
 	if len(p.memberPeers) != 0 {
-		return p.DropPeer(p.memberPeers)
+		return p.dropAnyPeerCore(p.memberPeers)
 	}
 	if peerType == PeerTypeMember {
 		return p2p.DiscTooManyPeers
 	}
 
 	if len(p.importantPeers) != 0 {
-		return p.DropPeer(p.importantPeers)
+		return p.dropAnyPeerCore(p.importantPeers)
 	}
 
 	if peerType == PeerTypeImportant {
@@ -423,7 +418,7 @@ func (p *BasePtt) DropAnyPeer(peerType PeerType, isLocked bool) error {
 	return nil
 }
 
-func (p *BasePtt) DropPeer(peers map[discover.NodeID]*PttPeer) error {
+func (p *BasePtt) dropAnyPeerCore(peers map[discover.NodeID]*PttPeer) error {
 	randIdx := mrand.Intn(len(peers))
 
 	i := 0
@@ -443,6 +438,13 @@ func (p *BasePtt) DropPeer(peers map[discover.NodeID]*PttPeer) error {
 /**********
  * Misc
  **********/
+
+/*
+NoMorePeers returns noMorePeers channel
+*/
+func (p *BasePtt) NoMorePeers() chan struct{} {
+	return p.noMorePeers
+}
 
 func (p *BasePtt) GetPeers() (map[discover.NodeID]*PttPeer, map[discover.NodeID]*PttPeer, map[discover.NodeID]*PttPeer, map[discover.NodeID]*PttPeer, *sync.RWMutex) {
 	return p.myPeers, p.importantPeers, p.memberPeers, p.randomPeers, &p.peerLock

@@ -159,8 +159,6 @@ func (k *KeyInfo) Save(db *pttdb.LDBBatch) error {
 		&pttdb.KeyVal{K: idxKey2, V: key},
 	}
 
-	log.Debug("Save: to PutAll", "idxKey", idxKey, "idx", idx, "key", key, "marshaled", marshaled)
-
 	_, err = db.TryPutAll(idxKey, idx, kvs, true, false)
 	if err != nil {
 		return err

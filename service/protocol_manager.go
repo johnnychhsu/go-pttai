@@ -71,21 +71,9 @@ type ProtocolManager interface {
 	ForceSyncCycle() time.Duration
 	SetForceSyncCycle()
 
-	// join
-	JoinKeyInfos() []*KeyInfo
-	GetJoinKeyInfo(hash *common.Address) (*KeyInfo, error)
-	GetJoinKey() (*KeyInfo, error)
-
-	GenerateJoinKeyInfoLoop() error
-
-	ApproveJoin(joinEntity *JoinEntity, keyInfo *KeyInfo, peer *PttPeer) (*KeyInfo, interface{}, error)
-
-	GetJoinType(hash *common.Address) (JoinType, error)
-
 	// op-key
 	GetOpKeyInfo(hash *common.Address) (*KeyInfo, error)
 	GetOpKey() (*KeyInfo, error)
-	GetNewestOpKey() (*KeyInfo, error)
 	RegisterOpKeyInfo(keyInfo *KeyInfo) error
 
 	DBOpKeyLock() *types.LockMap
@@ -93,8 +81,6 @@ type ProtocolManager interface {
 	OpKeyInfos() []*KeyInfo
 
 	SaveOpKeyInfo(opKeyInfo *KeyInfo) error
-
-	RevokeOpKeyInfo(revokeOpKeyInfo *KeyInfo) error
 
 	RenewOpKeySeconds() uint64
 	ExpireOpKeySeconds() uint64
@@ -199,9 +185,6 @@ func NewBaseProtocolManager(ptt Ptt, renewOpKeySeconds uint64, expireOpKeySecond
 
 		syncWG: ptt.SyncWG(),
 
-		// join-key
-		joinKeyInfos: make([]*KeyInfo, 0),
-
 		// op-key
 		renewOpKeySeconds:  renewOpKeySeconds,
 		expireOpKeySeconds: expireOpKeySeconds,
@@ -239,8 +222,6 @@ func NewBaseProtocolManager(ptt Ptt, renewOpKeySeconds uint64, expireOpKeySecond
 }
 
 func (pm *BaseProtocolManager) Start() error {
-	pm.isStart = true
-
 	return nil
 }
 
@@ -270,22 +251,10 @@ func (pm *BaseProtocolManager) DB() *pttdb.LDBBatch {
 	return pm.db
 }
 
-func (pm *BaseProtocolManager) OpKeyInfos() []*KeyInfo {
-	return pm.opKeyInfos
-}
-
-func (pm *BaseProtocolManager) SaveOpKeyInfo(opKeyInfo *KeyInfo) error {
-	return opKeyInfo.Save(pm.db)
-}
-
 func (pm *BaseProtocolManager) Entity() Entity {
 	return pm.entity
 }
 
-func (pm *BaseProtocolManager) GetJoinType(hash *common.Address) (JoinType, error) {
-	return JoinTypeInvalid, ErrInvalidData
-}
-
-func (pm *BaseProtocolManager) DBOpKeyLock() *types.LockMap {
-	return pm.dbOpKeyLock
+func (pm *BaseProtocolManager) IsStart() bool {
+	return pm.isStart
 }

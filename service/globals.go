@@ -48,12 +48,13 @@ const (
 // protocol
 const (
 	_ uint = iota
-	Ptt1
+
+	Ptt2 = 2
 )
 
 var (
-	ProtocolVersions = [1]uint{Ptt1}
-	ProtocolName     = "ptt1"
+	ProtocolVersions = [1]uint{Ptt2}
+	ProtocolName     = "ptt2"
 	ProtocolLengths  = [1]uint64{4}
 )
 
@@ -63,6 +64,16 @@ const (
 	CodeTypeJoinMsg    = 0x01
 	CodeTypeJoinAckMsg = 0x02
 	CodeTypeOpMsg      = 0x03
+)
+
+// op-type
+const (
+	_ OpType = iota
+
+	IdentifyPeerMsg
+	IdentifyPeerAckMsg
+
+	NMsg
 )
 
 // op-key

@@ -31,7 +31,6 @@ import (
 	"github.com/ailabstw/go-pttai/common"
 	"github.com/ailabstw/go-pttai/common/types"
 	"github.com/ailabstw/go-pttai/crypto"
-	"github.com/ailabstw/go-pttai/p2p"
 )
 
 var genIV = func(iv []byte) error {
@@ -143,7 +142,7 @@ func (p *BasePtt) MarshalData(code CodeType, hash *common.Address, encData []byt
 	}
 
 	// ptt-event signed
-	evWithSalt, checksum, err := p.ChecksumPttEventData(ev)
+	evWithSalt, checksum, err := p.checksumPttEventData(ev)
 	if err != nil {
 		return nil, err
 	}
@@ -162,13 +161,13 @@ ChecksumPttEventData do checksum on the ev
 
 Return: bytesWithSalt, checksum, error
 */
-func (p *BasePtt) ChecksumPttEventData(ev *PttEventData) ([]byte, []byte, error) {
+func (p *BasePtt) checksumPttEventData(ev *PttEventData) ([]byte, []byte, error) {
 	evBytes, err := json.Marshal(ev)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	return p.ChecksumData(evBytes)
+	return p.checksumData(evBytes)
 }
 
 /*
@@ -176,7 +175,7 @@ ChecksumData do checksum on the bytes
 
 Return: bytesWithSalt, checksum, error
 */
-func (p *BasePtt) ChecksumData(bytes []byte) ([]byte, []byte, error) {
+func (p *BasePtt) checksumData(bytes []byte) ([]byte, []byte, error) {
 	salt, err := types.NewSalt()
 	if err != nil {
 		return nil, nil, err
@@ -195,7 +194,7 @@ func (p *BasePtt) ChecksumData(bytes []byte) ([]byte, []byte, error) {
 PttUnmarshalData unmarshal the pttData to the original data
 */
 func (p *BasePtt) UnmarshalData(pttData *PttData) (CodeType, *common.Address, []byte, error) {
-	ev, err := p.VerifyChecksumEventData(pttData)
+	ev, err := p.verifyChecksumEventData(pttData)
 	if err != nil {
 		return CodeTypeDummy, nil, nil, err
 	}
@@ -206,9 +205,9 @@ func (p *BasePtt) UnmarshalData(pttData *PttData) (CodeType, *common.Address, []
 	return ev.Code, hashAddr, ev.EncData, nil
 }
 
-func (p *BasePtt) VerifyChecksumEventData(pttData *PttData) (*PttEventData, error) {
+func (p *BasePtt) verifyChecksumEventData(pttData *PttData) (*PttEventData, error) {
 	evWithSalt, checksum := pttData.EvWithSalt, pttData.Checksum
-	err := p.VerifyChecksumData(evWithSalt, checksum)
+	err := p.verifyChecksumData(evWithSalt, checksum)
 	if err != nil {
 		return nil, err
 
@@ -226,7 +225,7 @@ func (p *BasePtt) VerifyChecksumEventData(pttData *PttData) (*PttEventData, erro
 
 }
 
-func (p *BasePtt) VerifyChecksumData(bytesWithSalt []byte, checksum []byte) error {
+func (p *BasePtt) verifyChecksumData(bytesWithSalt []byte, checksum []byte) error {
 	hash := crypto.Keccak256(bytesWithSalt)
 
 	isGood := reflect.DeepEqual(hash, checksum)
@@ -234,44 +233,4 @@ func (p *BasePtt) VerifyChecksumData(bytesWithSalt []byte, checksum []byte) erro
 		return ErrInvalidData
 	}
 	return nil
-}
-
-/*
-SignEventData Signs the PttEventData
-*/
-func (p *BasePtt) SignEventData(ev *PttEventData, key *ecdsa.PrivateKey) ([]byte, []byte, []byte, error) {
-	evBytes, err := json.Marshal(ev)
-	if err != nil {
-		return nil, nil, nil, err
-	}
-
-	bytesWithSalt, _, sig, pubBytes, err := SignData(evBytes, key)
-	return bytesWithSalt, sig, pubBytes, err
-}
-
-func (p *BasePtt) VerifyEventData(evWithSalt []byte, sig []byte, keyBytes []byte) (*PttEventData, error) {
-	err := VerifyData(evWithSalt, sig, keyBytes)
-	if err != nil {
-		return nil, err
-
-	}
-
-	evBytes := evWithSalt[:len(evWithSalt)-types.SizeSalt]
-
-	ev := &PttEventData{}
-	err = json.Unmarshal(evBytes, ev)
-	if err != nil {
-		return nil, err
-	}
-
-	return ev, nil
-
-}
-
-func (p *BasePtt) Server() *p2p.Server {
-	return p.server
-}
-
-func (p *BasePtt) NoMorePeers() chan struct{} {
-	return p.noMorePeers
 }

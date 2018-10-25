@@ -61,46 +61,6 @@ func VerifyData(bytesWithSalt []byte, sig []byte, keyBytes []byte) error {
 	return nil
 }
 
-/*
-func SelectBestServicePeers(ps *ServicePeerSet, n int) ([]Peer, error) {
-	peers := ps.Peers()
-	lenPeers := len(peers)
-
-	psList := make([]Peer, lenPeers)
-	var i int = 0
-	for _, p := range peers {
-		psList[i] = p
-		i++
-	}
-	psList, err := ShufflePeers(psList)
-	if err != nil {
-		return nil, err
-	}
-
-	var lenList int
-	if lenPeers < n {
-		lenList = lenPeers
-	} else {
-		lenList = n
-	}
-
-	return psList[:lenList], nil
-}
-*/
-
-/*
-func ShufflePeers(src []Peer) ([]Peer, error) {
-	dest := make([]Peer, len(src))
-	perm := mrand.Perm(len(src))
-	for i, v := range perm {
-		dest[v] = src[i]
-	}
-
-	return dest, nil
-
-}
-*/
-
 func DBPrefix(dbPrefix []byte, id *types.PttID) ([]byte, error) {
 	return common.Concat([][]byte{dbPrefix, id[:]})
 }

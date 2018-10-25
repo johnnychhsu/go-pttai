@@ -38,10 +38,8 @@ func (pm *BaseProtocolManager) ForceSyncCycle() time.Duration {
 	return pm.forceSyncCycle
 }
 
-func (pm *BaseProtocolManager) SetForceSyncCycle() error {
+func (pm *BaseProtocolManager) SetForceSyncCycle() {
 	randNum := rand.Intn(pm.maxSyncRandomSeconds-pm.minSyncRandomSeconds) + pm.minSyncRandomSeconds
 
 	pm.forceSyncCycle = time.Duration(randNum) * time.Second
-
-	return nil
 }

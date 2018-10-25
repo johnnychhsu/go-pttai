@@ -17,8 +17,10 @@
 package service
 
 import (
+	"crypto/ecdsa"
 	"sync"
 
+	"github.com/ailabstw/go-pttai/common"
 	"github.com/ailabstw/go-pttai/common/types"
 	"github.com/ailabstw/go-pttai/event"
 	"github.com/ailabstw/go-pttai/log"
@@ -33,6 +35,12 @@ Ptt is the public-access version of Ptt.
 type Ptt interface {
 	MyNodeID() *discover.NodeID
 	SyncWG() *sync.WaitGroup
+
+	EncryptData(op OpType, data []byte, key *ecdsa.PrivateKey) ([]byte, error)
+	DecryptData(ciphertext []byte, key *ecdsa.PrivateKey) (OpType, []byte, error)
+
+	MarshalData(code CodeType, hash *common.Address, encData []byte) (*PttData, error)
+	UnmarshalData(pttData *PttData) (CodeType, *common.Address, []byte, error)
 }
 
 type BasePtt struct {
@@ -260,4 +268,8 @@ func (p *BasePtt) pttAPIs() []rpc.API {
 
 func (p *BasePtt) nodeInfo() interface{} {
 	return nil
+}
+
+func (p *BasePtt) Server() *p2p.Server {
+	return p.server
 }
