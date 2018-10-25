@@ -31,10 +31,7 @@ import (
 	"github.com/ailabstw/go-pttai/common"
 	"github.com/ailabstw/go-pttai/common/types"
 	"github.com/ailabstw/go-pttai/crypto"
-	"github.com/ailabstw/go-pttai/log"
 	"github.com/ailabstw/go-pttai/p2p"
-	"github.com/ailabstw/go-pttai/p2p/discover"
-	"github.com/ailabstw/go-pttai/rpc"
 )
 
 var genIV = func(iv []byte) error {
@@ -269,85 +266,6 @@ func (p *BasePtt) VerifyEventData(evWithSalt []byte, sig []byte, keyBytes []byte
 
 	return ev, nil
 
-}
-
-func (p *BasePtt) GenerateProtocols() []p2p.Protocol {
-	subProtocols := make([]p2p.Protocol, 0, len(ProtocolVersions))
-
-	for i, version := range ProtocolVersions {
-		protocol := p2p.Protocol{
-			Name:     ProtocolName,
-			Version:  version,
-			Length:   ProtocolLengths[i],
-			Run:      p.GenerateRun(version),
-			NodeInfo: p.GenerateNodeInfo(),
-			PeerInfo: p.GeneratePeerInfo(),
-		}
-
-		subProtocols = append(subProtocols, protocol)
-	}
-
-	return subProtocols
-}
-
-func (p *BasePtt) GenerateRun(version uint) func(p *p2p.Peer, rw p2p.MsgReadWriter) error {
-	return func(p2pPeer *p2p.Peer, rw p2p.MsgReadWriter) error {
-		peer, err := p.NewPeer(version, p2pPeer, rw)
-		log.Debug("GenerateRun: get new peer", "peer", peer, "e", err)
-		if err != nil {
-			return err
-		}
-
-		select {
-		case p.newPeerCh <- peer:
-			log.Debug("pass newPeerCh: to HandlePeer", "peer", peer)
-
-			p.peerWG.Add(1)
-			defer func() {
-				log.Debug("GenerateRun: finish HandlePeer: to peerWG.Done", "peer", peer)
-				p.peerWG.Done()
-			}()
-
-			return p.HandlePeer(peer)
-		case <-p.noMorePeers:
-			return p2p.DiscQuitting
-		}
-	}
-
-}
-
-func (p *BasePtt) GenerateNodeInfo() func() interface{} {
-	return func() interface{} {
-		return p.NodeInfo()
-	}
-}
-
-func (p *BasePtt) GeneratePeerInfo() func(id discover.NodeID) interface{} {
-	return func(id discover.NodeID) interface{} {
-		p.peerLock.RLock()
-		defer p.peerLock.RUnlock()
-
-		peer := p.GetPeer(&id, true)
-		if peer == nil {
-			return nil
-		}
-
-		return peer.Info()
-	}
-}
-
-func (p *BasePtt) PttAPIs() []rpc.API {
-	return []rpc.API{
-		{
-			Namespace: "ptt",
-			Version:   "1.0",
-			Service:   NewPrivateAPI(p),
-		},
-	}
-}
-
-func (p *BasePtt) NodeInfo() interface{} {
-	return nil
 }
 
 func (p *BasePtt) Server() *p2p.Server {

@@ -333,7 +333,7 @@ func (p *BasePtt) UnsetPeerType(peer *PttPeer, peerType PeerType, isLocked bool)
 	return nil
 }
 
-func (p *BasePtt) ClosePeers() {
+func (p *BasePtt) closePeers() {
 	p.peerLock.RLock()
 	defer p.peerLock.RUnlock()
 

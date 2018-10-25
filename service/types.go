@@ -16,9 +16,53 @@
 
 package service
 
+import (
+	"encoding/json"
+
+	"github.com/ailabstw/go-pttai/common/types"
+)
+
 // ServiceConstructor is the function signature of the constructors needed to be
 // registered for service instantiation.
-type ServiceConstructor func(ctx *ServiceContext) (PttService, error)
+type ServiceConstructor func(ctx *ServiceContext) (Service, error)
+
+// PeerType
+
+type PeerType int
+
+const (
+	PeerTypeErr PeerType = iota
+	PeerTypeRemoved
+	PeerTypeRandom
+	PeerTypeMember
+	PeerTypeImportant
+	PeerTypeHub
+	PeerTypeMe
+)
+
+// op-data
+
+type OpData struct {
+	Op        OpType
+	DataBytes []byte `json:"D"`
+}
+
+func MarshalOpData(op OpType, data interface{}) (*OpData, error) {
+	dataBytes, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+
+	return &OpData{
+		Op:        op,
+		DataBytes: dataBytes,
+	}, nil
+}
+
+func UnmarshalOpData(opData *OpData, op *OpType, data interface{}) error {
+	*op = opData.Op
+	return json.Unmarshal(opData.DataBytes, data)
+}
 
 // merkletree
 
@@ -33,20 +77,19 @@ const (
 	MerkleTreeLevelYear
 )
 
-// PeerType
+// sign-info
 
-type PeerType int
+type SignInfo struct {
+	ID       *types.PttID    `json:"ID"`
+	CreateTS types.Timestamp `json:"CT"`
 
-const (
-	PeerTypeErr PeerType = iota
-	PeerTypeRemoved
-	PeerTypeRandom
-	PeerTypeMember
-	PeerTypeImportant
-	PeerTypeMe
-)
+	Hash   []byte     `json:"H"`
+	Salt   types.Salt `json:"s"`
+	Sig    []byte     `json:"S"`
+	Pubkey []byte     `json:"K"`
+}
 
-// NodeType
+// node-type
 type NodeType int
 
 const (
@@ -55,3 +98,9 @@ const (
 	NodeTypeDesktop
 	NodeTypeServer
 )
+
+// last-seen
+type LastSeen struct {
+	ID *types.PttID
+	TS types.Timestamp
+}

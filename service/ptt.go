@@ -32,6 +32,7 @@ Ptt is the public-access version of Ptt.
 */
 type Ptt interface {
 	MyNodeID() *discover.NodeID
+	SyncWG() *sync.WaitGroup
 }
 
 type BasePtt struct {
@@ -57,8 +58,7 @@ type BasePtt struct {
 	peerWG sync.WaitGroup
 
 	// sync
-	quitSync chan struct{}
-	syncWG   sync.WaitGroup
+	syncWG sync.WaitGroup
 
 	// services
 	services map[string]Service
@@ -98,20 +98,24 @@ func NewPtt(ctx *ServiceContext, cfg *Config, myNodeID *discover.NodeID) (*BaseP
 		memberPeers:    make(map[discover.NodeID]*PttPeer),
 		randomPeers:    make(map[discover.NodeID]*PttPeer),
 
-		// sync
-		quitSync: make(chan struct{}),
-
 		// services
 		services: make(map[string]Service),
 	}
 
-	p.apis = p.PttAPIs()
+	p.apis = p.pttAPIs()
 
-	p.protocols = p.GenerateProtocols()
+	p.protocols = p.generateProtocols()
 
 	return p, nil
 }
 
+/**********
+PttService
+**********/
+
+/*
+Protocols
+*/
 func (p *BasePtt) Protocols() []p2p.Protocol {
 	return p.protocols
 }
@@ -123,19 +127,16 @@ func (p *BasePtt) APIs() []rpc.API {
 func (p *BasePtt) Start(server *p2p.Server) error {
 	p.server = server
 
-	go p.SyncWrapper()
-
 	return nil
 }
 
 func (p *BasePtt) Stop() error {
-	close(p.quitSync)
 	close(p.noMorePeers)
 
 	p.syncWG.Wait()
 
 	// close peers
-	p.ClosePeers()
+	p.closePeers()
 
 	p.peerWG.Wait()
 
@@ -147,29 +148,20 @@ func (p *BasePtt) Stop() error {
 }
 
 /**********
- * Sync
- **********/
+Ptt
+**********/
 
-func (p *BasePtt) SyncWrapper() {
-	log.Debug("ptt.SyncWrapper: start")
-loop:
-	for {
-		select {
-		case _, ok := <-p.newPeerCh:
-			if !ok {
-				break loop
-			}
-		case <-p.quitSync:
-			break loop
-		}
-	}
+func (p *BasePtt) MyNodeID() *discover.NodeID {
+	return p.myNodeID
+}
 
-	log.Debug("ptt.SyncWrapper: done")
+func (p *BasePtt) SyncWG() *sync.WaitGroup {
+	return &p.syncWG
 }
 
 /**********
- * RW
- **********/
+RW
+**********/
 
 func (p *BasePtt) RWInit(peer *PttPeer, version uint) {
 	if rw, ok := peer.RW().(MeteredMsgReadWriter); ok {
@@ -193,6 +185,79 @@ func (p *BasePtt) RegisterService(service Service) error {
 	return nil
 }
 
-func (p *BasePtt) MyNodeID() *discover.NodeID {
-	return p.myNodeID
+/**********
+ * Generate Protocols
+ **********/
+
+func (p *BasePtt) generateProtocols() []p2p.Protocol {
+	subProtocols := make([]p2p.Protocol, 0, len(ProtocolVersions))
+
+	for i, version := range ProtocolVersions {
+		protocol := p2p.Protocol{
+			Name:     ProtocolName,
+			Version:  version,
+			Length:   ProtocolLengths[i],
+			Run:      p.generateRun(version),
+			NodeInfo: p.generateNodeInfo(),
+			PeerInfo: p.generatePeerInfo(),
+		}
+
+		subProtocols = append(subProtocols, protocol)
+	}
+
+	return subProtocols
+}
+
+func (p *BasePtt) generateRun(version uint) func(p *p2p.Peer, rw p2p.MsgReadWriter) error {
+	return func(p2pPeer *p2p.Peer, rw p2p.MsgReadWriter) error {
+		peer, err := p.NewPeer(version, p2pPeer, rw)
+		if err != nil {
+			return err
+		}
+
+		log.Debug("generateRun: got peer", "peer", peer)
+
+		p.peerWG.Add(1)
+		defer p.peerWG.Done()
+
+		err = p.HandlePeer(peer)
+		log.Debug("generateRun: after HandlePeer", "peer", peer, "e", err)
+
+		return err
+	}
+
+}
+
+func (p *BasePtt) generateNodeInfo() func() interface{} {
+	return func() interface{} {
+		return p.nodeInfo()
+	}
+}
+
+func (p *BasePtt) generatePeerInfo() func(id discover.NodeID) interface{} {
+	return func(id discover.NodeID) interface{} {
+		p.peerLock.RLock()
+		defer p.peerLock.RUnlock()
+
+		peer := p.GetPeer(&id, true)
+		if peer == nil {
+			return nil
+		}
+
+		return peer.Info()
+	}
+}
+
+func (p *BasePtt) pttAPIs() []rpc.API {
+	return []rpc.API{
+		{
+			Namespace: "ptt",
+			Version:   "1.0",
+			Service:   NewPrivateAPI(p),
+		},
+	}
+}
+
+func (p *BasePtt) nodeInfo() interface{} {
+	return nil
 }
