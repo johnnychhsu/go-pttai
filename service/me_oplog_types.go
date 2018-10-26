@@ -17,29 +17,43 @@
 package service
 
 import (
-	"math/rand"
-	"sync"
-	"time"
+	"github.com/ailabstw/go-pttai/common/types"
+	"github.com/ailabstw/go-pttai/p2p/discover"
 )
 
-func (pm *BaseProtocolManager) QuitSync() chan struct{} {
-	return pm.quitSync
+const (
+	_ OpType = iota
+	MeOpTypeCreateMe
+	MeOpTypeSetNodeName
+	MeOpTypeCreateBoard
+	MeOpTypeJoinBoard
+	MeOpTypeCreateFriend
+	MeOpTypeJoinFriend
+
+	NMeOpType
+)
+
+type MeOpCreateMe struct {
+	NodeID   *discover.NodeID `json:"NID"`
+	NodeType NodeType         `json:"NT"`
+	NodeName []byte           `json:"n"`
 }
 
-func (pm *BaseProtocolManager) SetQuitSync(quitSync chan struct{}) {
-	pm.quitSync = quitSync
+type MeOpSetNodeName struct {
+	NodeID *discover.NodeID `json:"NID"`
+	Name   []byte           `json:"n"`
 }
 
-func (pm *BaseProtocolManager) SyncWG() *sync.WaitGroup {
-	return pm.syncWG
+type MeOpCreateBoard struct {
 }
 
-func (pm *BaseProtocolManager) ForceSyncCycle() time.Duration {
-	return pm.forceSyncCycle
+type MeOpCreateFriend struct {
+	FriendID *types.PttID `json:"FID"`
 }
 
-func (pm *BaseProtocolManager) SetForceSyncCycle() {
-	randNum := rand.Intn(pm.maxSyncRandomSeconds-pm.minSyncRandomSeconds) + pm.minSyncRandomSeconds
+type MeOpJoinBoard struct {
+}
 
-	pm.forceSyncCycle = time.Duration(randNum) * time.Second
+type MeOpJoinFriend struct {
+	FriendID *types.PttID `json:"FID"`
 }

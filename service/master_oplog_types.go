@@ -16,32 +16,21 @@
 
 package service
 
-import (
-	"github.com/ailabstw/go-pttai/log"
+import "github.com/ailabstw/go-pttai/p2p/discover"
+
+const (
+	_ OpType = iota
+	MasterOpTypeAddMaster
+	MasterOpTypeRevokeMaster
 )
 
-func StartPM(pm ProtocolManager) error {
-	entityName := pm.Entity().Name()
-	log.Info("StartPM: start", "entity", entityName)
-
-	err := pm.Start()
-	if err != nil {
-		return err
-	}
-
-	return nil
+type MasterOpAddMaster struct {
+	ID      *discover.NodeID
+	Weight  uint32                     `json:"W"`
+	Masters map[discover.NodeID]uint32 `json:"M"`
 }
 
-func StopPM(pm ProtocolManager) error {
-	entityName := pm.Entity().Name()
-	log.Info("Stop PM: to stop", "entity", entityName)
-
-	err := pm.Stop()
-	if err != nil {
-		return err
-	}
-
-	log.Info(entityName + " protocol stopped")
-
-	return nil
+type MasterOpRevokeMaster struct {
+	ID      *discover.NodeID
+	Masters map[discover.NodeID]uint32 `json:"M"`
 }

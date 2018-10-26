@@ -16,32 +16,31 @@
 
 package service
 
-import (
-	"github.com/ailabstw/go-pttai/log"
+type KeyType int
+
+const (
+	_ KeyType = iota
+	KeyTypeBIP32
 )
 
-func StartPM(pm ProtocolManager) error {
-	entityName := pm.Entity().Name()
-	log.Info("StartPM: start", "entity", entityName)
+type HashType uint8
 
-	err := pm.Start()
-	if err != nil {
-		return err
-	}
+const (
+	_ HashType = iota
+	HashTypeSHA256
+)
 
-	return nil
+type KeyExtraInfo struct {
+	KeyType KeyType `json:"T"`
+
+	Data interface{} `json:"D"`
 }
 
-func StopPM(pm ProtocolManager) error {
-	entityName := pm.Entity().Name()
-	log.Info("Stop PM: to stop", "entity", entityName)
+/**********
+ * KeyData requires alphabetic order of json-symbol
+ **********/
 
-	err := pm.Stop()
-	if err != nil {
-		return err
-	}
-
-	log.Info(entityName + " protocol stopped")
-
-	return nil
+type KeyBIP32 struct {
+	ParentKey []byte `json:"P"`
+	Salt      []byte `json:"S"`
 }

@@ -17,13 +17,8 @@
 package service
 
 import (
-	"sync"
-	"time"
-
-	"github.com/ailabstw/go-pttai/common"
 	"github.com/ailabstw/go-pttai/common/types"
 	"github.com/ailabstw/go-pttai/event"
-	"github.com/ailabstw/go-pttai/p2p/discover"
 	"github.com/ailabstw/go-pttai/pttdb"
 )
 
@@ -31,59 +26,9 @@ type ProtocolManager interface {
 	Start() error
 	Stop() error
 
-	HandleMessage(op OpType, dataBytes []byte, peer *PttPeer) error
-
-	Sync(peer *PttPeer) error
-
 	// implemented in base-protocol-manager
 	// event-mux
 	EventMux() *event.TypeMux
-
-	// peers
-	Peers() *PttPeerSet
-	PeerList() []*PttPeer
-
-	NewPeerCh() chan *PttPeer
-	NoMorePeers() chan struct{}
-	SetNoMorePeers(noMorePeers chan struct{})
-
-	RegisterPeer(peer *PttPeer) error
-	UnregisterPeer(peer *PttPeer) error
-
-	CountPeers() (int, error)
-
-	IsMyDevice(peer *PttPeer) bool
-	IsImportantPeer(peer *PttPeer) bool
-	IsMemberPeer(peer *PttPeer) bool
-
-	IsFitPeer(peer *PttPeer) PeerType
-
-	IsSuspiciousID(id *types.PttID, nodeID *discover.NodeID) bool
-
-	IsGoodID(id *types.PttID, nodeID *discover.NodeID) bool
-
-	// sync
-	QuitSync() chan struct{}
-	SetQuitSync(quitSync chan struct{})
-
-	SyncWG() *sync.WaitGroup
-
-	ForceSyncCycle() time.Duration
-	SetForceSyncCycle()
-
-	// op-key
-	GetOpKeyInfo(hash *common.Address) (*KeyInfo, error)
-	GetOpKey() (*KeyInfo, error)
-	RegisterOpKeyInfo(keyInfo *KeyInfo) error
-
-	DBOpKeyLock() *types.LockMap
-
-	OpKeyInfos() []*KeyInfo
-
-	SaveOpKeyInfo(opKeyInfo *KeyInfo) error
-
-	RenewOpKeySeconds() uint64
-	ExpireOpKeySeconds() uint64
 
 	// master
 	Master0Hash() []byte
@@ -108,39 +53,6 @@ type BaseProtocolManager struct {
 	// event-mux
 	eventMux *event.TypeMux
 
-	// peers
-	peers *PttPeerSet
-
-	newPeerCh   chan *PttPeer
-	noMorePeers chan struct{}
-
-	// sync
-	quitSync chan struct{}
-	syncWG   *sync.WaitGroup
-
-	maxSyncRandomSeconds int
-	minSyncRandomSeconds int
-
-	forceSyncCycle time.Duration
-
-	// join
-	// we may use map to speed up the lookup from hash, but map may significantly increasing the mem. Considering that the keys should be kept < 10, we use sorted-by-update-ts array.
-
-	lockJoinKeyInfo sync.RWMutex
-	joinKeyInfos    []*KeyInfo
-
-	// op-key
-	lockOpKeyInfo sync.RWMutex
-	opKeyInfos    []*KeyInfo
-
-	opKeyChan     chan *KeyInfo
-	revokeKeyChan chan *KeyInfo
-
-	renewOpKeySeconds  uint64
-	expireOpKeySeconds uint64
-
-	dbOpKeyLock *types.LockMap
-
 	// master-log-id
 	newestMasterLogID *types.PttID
 
@@ -159,37 +71,9 @@ type BaseProtocolManager struct {
 
 func NewBaseProtocolManager(ptt Ptt, renewOpKeySeconds uint64, expireOpKeySeconds uint64, maxSyncRandomSeconds int, minSyncRandomSeconds int, e Entity, db *pttdb.LDBBatch) (*BaseProtocolManager, error) {
 
-	peerSet, err := NewPttPeerSet()
-	if err != nil {
-		return nil, err
-	}
-
-	dbOpKeyLock, err := types.NewLockMap(SleepTimeOpKeyLock)
-	if err != nil {
-		return nil, err
-	}
-
 	pm := &BaseProtocolManager{
 		// event-mux
 		eventMux: new(event.TypeMux),
-
-		// peers
-		peers: peerSet,
-
-		// new-peer-ch
-		newPeerCh: make(chan *PttPeer),
-
-		// sync
-		maxSyncRandomSeconds: maxSyncRandomSeconds,
-		minSyncRandomSeconds: minSyncRandomSeconds,
-
-		syncWG: ptt.SyncWG(),
-
-		// op-key
-		renewOpKeySeconds:  renewOpKeySeconds,
-		expireOpKeySeconds: expireOpKeySeconds,
-
-		dbOpKeyLock: dbOpKeyLock,
 
 		// entity
 		entity: e,
@@ -200,14 +84,6 @@ func NewBaseProtocolManager(ptt Ptt, renewOpKeySeconds uint64, expireOpKeySecond
 		// db
 		db: db,
 	}
-
-	// op-key
-	opKeyInfos, err := pm.loadOpKeyInfos(expireOpKeySeconds)
-	if err != nil {
-		return nil, err
-	}
-
-	pm.opKeyInfos = opKeyInfos
 
 	// master-log-id
 	newestMasterLogID, err := pm.loadNewestMasterLogID()
@@ -228,14 +104,6 @@ func (pm *BaseProtocolManager) Start() error {
 func (pm *BaseProtocolManager) Stop() error {
 	pm.eventMux.Stop()
 
-	return nil
-}
-
-func (pm *BaseProtocolManager) HandleMessage(op OpType, dataBytes []byte, peer *PttPeer) error {
-	return nil
-}
-
-func (pm *BaseProtocolManager) Sync(peer *PttPeer) error {
 	return nil
 }
 

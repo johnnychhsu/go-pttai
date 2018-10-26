@@ -14,10 +14,28 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-pttai library. If not, see <http://www.gnu.org/licenses/>.
 
+// ISC License
+//
+// Copyright (c) 2013-2017 The btcsuite developers
+// Copyright (c) 2016-2017 The Lightning Network Developers
+//
+// Permission to use, copy, modify, and distribute this software for any
+// purpose with or without fee is hereby granted, provided that the above
+// copyright notice and this permission notice appear in all copies.
+//
+// THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+// WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+// MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+// ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+// WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+// ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+// OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
 package service
 
 import (
 	"crypto/ecdsa"
+	"crypto/sha256"
 	"encoding/json"
 
 	"github.com/ailabstw/go-pttai/common"
@@ -26,6 +44,7 @@ import (
 	"github.com/ailabstw/go-pttai/log"
 	"github.com/ailabstw/go-pttai/pttdb"
 	"github.com/syndtr/goleveldb/leveldb"
+	"golang.org/x/crypto/pbkdf2"
 )
 
 // KeyInfo
@@ -36,15 +55,15 @@ type KeyInfo struct {
 	KeyBytes []byte            `json:"K"`
 	Hash     *common.Address   `json:"H"`
 	UpdateTS types.Timestamp   `json:"UT"`
-	DoerID   *types.PttID      `json:"DID"`
 	EntityID *types.PttID      `json:"EID"`
+	DoerID   *types.PttID      `json:"DID"`
 	Status   types.Status      `json:"S"`
 	LogID    *types.PttID      `json:"pl"`
-	Extra    interface{}       `json:"e,omitempty"`
+	Extra    *KeyExtraInfo     `json:"e,omitempty"`
 }
 
-func NewKeyInfo(entityID *types.PttID, masterKey *ecdsa.PrivateKey) (*KeyInfo, error) {
-	key, extra, err := deriveKey(masterKey)
+func NewOpKeyInfo(entityID *types.PttID, doerID *types.PttID, masterKey *ecdsa.PrivateKey) (*KeyInfo, error) {
+	key, extra, err := deriveOpKey(masterKey)
 	if err != nil {
 		return nil, err
 	}
@@ -69,16 +88,30 @@ func NewKeyInfo(entityID *types.PttID, masterKey *ecdsa.PrivateKey) (*KeyInfo, e
 		EntityID: entityID,
 		Extra:    extra,
 	}, nil
+}
+
+func NewJoinKeyInfo(entityID *types.PttID, doerID *types.PttID) (*KeyInfo, error) {
+	key, err := deriveJoinKey()
+	if err != nil {
+		return nil, err
+	}
+
+	return newKeyInfo(key, nil, entityID, doerID)
 }
 
 /*
-NewKeyInfo2 is used for signing for now.
+NewSignKeyInfo is used for signing for now.
 */
-func NewKeyInfo2(entityID *types.PttID, masterKey *ecdsa.PrivateKey) (*KeyInfo, error) {
-	key, extra, err := deriveKey2(masterKey)
+func NewSignKeyInfo(entityID *types.PttID, doerID *types.PttID, masterKey *ecdsa.PrivateKey) (*KeyInfo, error) {
+	key, extra, err := deriveSignKey(masterKey)
 	if err != nil {
 		return nil, err
 	}
+
+	return newKeyInfo(key, extra, entityID, doerID)
+}
+
+func newKeyInfo(key *ecdsa.PrivateKey, extra *KeyExtraInfo, entityID *types.PttID, doerID *types.PttID) (*KeyInfo, error) {
 	hash := crypto.PubkeyToAddress(key.PublicKey)
 
 	updateTS, err := types.GetTimestamp()
@@ -98,31 +131,48 @@ func NewKeyInfo2(entityID *types.PttID, masterKey *ecdsa.PrivateKey) (*KeyInfo, 
 		Hash:     &hash,
 		UpdateTS: updateTS,
 		EntityID: entityID,
+		DoerID:   doerID,
 		Extra:    extra,
 	}, nil
 }
 
-func deriveKey(masterKey *ecdsa.PrivateKey) (*ecdsa.PrivateKey, interface{}, error) {
-	if masterKey == nil {
-		key, err := crypto.GenerateKey()
-		return key, nil, err
-	}
-
-	// XXX TODO: deriveKey from masterKey
-
+func deriveJoinKey() (*ecdsa.PrivateKey, error) {
 	key, err := crypto.GenerateKey()
-	return key, nil, err
+	return key, err
 }
 
-func deriveKey2(masterKey *ecdsa.PrivateKey) (*ecdsa.PrivateKey, interface{}, error) {
-	if masterKey == nil {
-		key, err := crypto.GenerateKey()
-		return key, nil, err
+func deriveOpKey(masterKey *ecdsa.PrivateKey) (*ecdsa.PrivateKey, *KeyExtraInfo, error) {
+	return deriveKeyBIP32(masterKey)
+}
+
+func deriveSignKey(masterKey *ecdsa.PrivateKey) (*ecdsa.PrivateKey, *KeyExtraInfo, error) {
+	return deriveKeyBIP32(masterKey)
+}
+
+func deriveKeyBIP32(masterKey *ecdsa.PrivateKey) (*ecdsa.PrivateKey, *KeyExtraInfo, error) {
+	salt, err := types.NewSalt()
+	if err != nil {
+		return nil, nil, err
+	}
+	saltBytes := salt[:]
+	masterKeyBytes := crypto.FromECDSA(masterKey)
+	keyBytes := pbkdf2.Key(masterKeyBytes, saltBytes, 1, 32, sha256.New)
+
+	key, err := crypto.ToECDSA(keyBytes)
+	if err != nil {
+		return nil, nil, err
 	}
 
-	// XXX TODO: deriveKey from masterKey
+	keyData := &KeyBIP32{
+		Salt: saltBytes,
+	}
 
-	return masterKey, nil, nil
+	extra := &KeyExtraInfo{
+		KeyType: KeyTypeBIP32,
+		Data:    keyData,
+	}
+
+	return key, extra, err
 }
 
 func (k *KeyInfo) Save(db *pttdb.LDBBatch) error {

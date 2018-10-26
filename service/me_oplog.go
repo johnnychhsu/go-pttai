@@ -16,32 +16,24 @@
 
 package service
 
-import (
-	"github.com/ailabstw/go-pttai/log"
-)
+import "github.com/ailabstw/go-pttai/common/types"
 
-func StartPM(pm ProtocolManager) error {
-	entityName := pm.Entity().Name()
-	log.Info("StartPM: start", "entity", entityName)
-
-	err := pm.Start()
-	if err != nil {
-		return err
-	}
-
-	return nil
+type MeOplog struct {
+	*BaseOplog `json:"O"`
 }
 
-func StopPM(pm ProtocolManager) error {
-	entityName := pm.Entity().Name()
-	log.Info("Stop PM: to stop", "entity", entityName)
+func NewMeOplog(objID *types.PttID, ts types.Timestamp, doerID *types.PttID, op OpType, data interface{}, myID *types.PttID) (*MeOplog, error) {
 
-	err := pm.Stop()
+	oplog, err := NewOplog(objID, ts, doerID, op, data, dbOplog, myID, DBMeOplogPrefix, DBMeIdxOplogPrefix, DBMeMerkleOplogPrefix, DBMeLockMap)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	log.Info(entityName + " protocol stopped")
+	return &MeOplog{
+		BaseOplog: oplog,
+	}, nil
+}
 
-	return nil
+func SetMeOplogDB(meOplog *MeOplog, myID *types.PttID) {
+	meOplog.SetDB(dbOplog, myID, DBMeOplogPrefix, DBMeIdxOplogPrefix, DBMeMerkleOplogPrefix, DBMeLockMap)
 }

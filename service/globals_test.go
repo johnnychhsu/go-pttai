@@ -28,6 +28,7 @@ import (
 	"github.com/ailabstw/go-pttai/crypto"
 	"github.com/ailabstw/go-pttai/log"
 	"github.com/ailabstw/go-pttai/p2p/discover"
+	"github.com/ailabstw/go-pttai/pttdb"
 )
 
 const ()
@@ -40,18 +41,29 @@ type TType struct {
 var (
 	tDefaultTimestamp = types.Timestamp{Ts: 1, NanoTs: 2}
 
-	tMyKey, _ = crypto.HexToECDSA("49a7b37aa6f6645917e7b807e9d1c00d4fa71f18343b0d4122a4d2df64dd6fee")
-	tMyID, _  = types.NewPttIDFromKeyPostfix(tMyKey, "0123456789abcdefghij")
+	tDefaultPtt = &BasePtt{
+		myNodeID: tDefaultNodeID,
+	}
+
+	tMyKey, _      = crypto.HexToECDSA("49a7b37aa6f6645917e7b807e9d1c00d4fa71f18343b0d4122a4d2df64dd6fee")
+	tMyID, _       = types.NewPttIDFromKeyPostfix(tMyKey, "0123456789abcdefghij")
+	tDefaultSPM, _ = NewBaseServiceProtocolManager(tDefaultPtt, nil)
 
 	tDefaultKey, _ = crypto.HexToECDSA("b71c71a67e1177ad4e901695e1b4b9ee17ae16c6668d313eac2f96dbcda3f291")
 	tDefaultID, _  = types.NewPttIDFromKeyPostfix(tDefaultKey, "0123456789abcdefghij")
 
+	tDerivedKey, _    = crypto.HexToECDSA("13c85d0b687987ca99d58db60c0e1314f6131eff10eb0c5083f1046fb97a15f2")
+	tDerivedExtraInfo = &KeyExtraInfo{
+		KeyType: KeyTypePBKDF2,
+		Data: &KeyPBKDF2{
+			Salt:     []byte{48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 48, 49},
+			Iter:     1,
+			HashFunc: HashTypeSHA256,
+		},
+	}
+
 	tDefaultHash   = crypto.PubkeyToAddress(tDefaultKey.PublicKey)
 	tDefaultNodeID = &discover.NodeID{}
-
-	tDefaultPtt = &BasePtt{
-		myNodeID: tDefaultNodeID,
-	}
 
 	tDefaultData = TType{
 		A: "test",
@@ -82,11 +94,154 @@ var (
 		Relay: 0,
 	}
 
+	tDefaultMerkleNode = &MerkleNode{
+		Level: MerkleTreeLevelHR,
+		Addr: []byte{
+			0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+			10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+		},
+		UpdateTS:  types.Timestamp{Ts: 1234567890, NanoTs: 123456789},
+		NChildren: 13,
+		Key:       []byte{},
+	}
+	tDefaultMerkleNodeBytes = []byte("\"AgABAgMEBQYHCAkKCwwNDg8QERITAAAAAEmWAtIHW80VAAAADQ==\"")
+
+	tDefaultEntity = &BaseEntity{}
+
+	tDefaultOplog          *BaseOplog = nil
+	tDefaultTimestamp1                = types.Timestamp{Ts: 1234567890, NanoTs: 0}
+	tDefaultOplogMerkleKey            = []byte{
+		46, 116, 116, 109, 107,
+		113, 86, 43, 113, 153, 152, 115, 219, 91, 40,
+		109, 249, 87, 175, 25, 158, 201, 70, 23, 247,
+		48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
+		97, 98, 99, 100, 101, 102, 103, 104, 105, 106,
+		1,
+		0, 0, 0, 0, 73, 150, 2, 210, 0, 0, 0, 0,
+		246, 98, 165, 238, 232, 42, 189, 244, 74, 45,
+		11, 117, 251, 24, 13, 175, 72, 167, 158, 224,
+		177, 13, 57, 70, 81, 133, 15, 212, 161, 120,
+		137, 46, 226, 133, 236, 225, 81, 20, 85, 120,
+		0, 0, 0, 1,
+	}
+	tDefaultMerkleNode1Now = &MerkleNode{
+		Level: MerkleTreeLevelNow,
+		Addr: []byte{
+			158, 153, 26, 223, 108, 59, 168, 243, 20, 65,
+			229, 51, 247, 237, 35, 58, 132, 167, 66, 96,
+		},
+		UpdateTS:  types.Timestamp{Ts: 1234567890, NanoTs: 0},
+		NChildren: 0,
+		Key: []byte{
+			46, 116, 116, 108, 103,
+			113, 86, 43, 113, 153, 152, 115, 219, 91, 40,
+			109, 249, 87, 175, 25, 158, 201, 70, 23, 247,
+			48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
+			97, 98, 99, 100, 101, 102, 103, 104, 105, 106,
+			0, 0, 0, 0, 73, 150, 2, 210, 0, 0, 0, 0,
+			246, 98, 165, 238, 232, 42, 189, 244, 74, 45,
+			11, 117, 251, 24, 13, 175, 72, 167, 158, 224,
+			177, 13, 57, 70, 81, 133, 15, 212, 161, 120,
+			137, 46, 226, 133, 236, 225, 81, 20, 85, 120,
+			0, 0, 0, 1,
+		},
+	}
+
+	tDefaultOplog2          *BaseOplog = nil
+	tDefaultTimestamp2                 = types.Timestamp{Ts: 1234567891, NanoTs: 0}
+	tDefaultOplog2MerkleKey            = []byte{
+		46, 116, 116, 109, 107,
+		113, 86, 43, 113, 153, 152, 115, 219, 91, 40,
+		109, 249, 87, 175, 25, 158, 201, 70, 23, 247,
+		48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
+		97, 98, 99, 100, 101, 102, 103, 104, 105, 106,
+		1,
+		0, 0, 0, 0, 73, 150, 2, 211, 0, 0, 0, 0,
+		8, 117, 214, 78, 226, 211, 208, 208, 222, 107,
+		248, 249, 180, 76, 232, 95, 240, 68, 198, 177,
+		248, 59, 142, 136, 59, 191, 133, 122, 171, 153,
+		197, 178, 82, 199, 66, 156, 50, 243, 168, 174,
+		0, 0, 0, 1,
+	}
+	tDefaultMerkleNode2Now = &MerkleNode{
+		Level: MerkleTreeLevelNow,
+		Addr: []byte{
+			43, 85, 77, 247, 77, 109, 80, 65, 18, 80,
+			180, 197, 10, 82, 238, 12, 226, 14, 122, 226,
+		},
+		UpdateTS:  types.Timestamp{Ts: 1234567891, NanoTs: 0},
+		NChildren: 0,
+		Key: []byte{
+			46, 116, 116, 108, 103,
+			113, 86, 43, 113, 153, 152, 115, 219, 91, 40,
+			109, 249, 87, 175, 25, 158, 201, 70, 23, 247,
+			48, 49, 50, 51, 52, 53, 54, 55, 56, 57,
+			97, 98, 99, 100, 101, 102, 103, 104, 105, 106,
+			0, 0, 0, 0, 73, 150, 2, 211, 0, 0, 0, 0,
+			8, 117, 214, 78, 226, 211, 208, 208, 222, 107,
+			248, 249, 180, 76, 232, 95, 240, 68, 198, 177,
+			248, 59, 142, 136, 59, 191, 133, 122, 171, 153,
+			197, 178, 82, 199, 66, 156, 50, 243, 168, 174,
+			0, 0, 0, 1,
+		},
+	}
+
+	tDefaultMerkleNodeDay = &MerkleNode{
+		Level: MerkleTreeLevelDay,
+		Addr: []byte{
+			101, 210, 96, 196, 38, 127, 83, 182, 124, 60,
+			234, 85, 0, 34, 231, 196, 68, 129, 31, 72,
+		},
+		UpdateTS:  types.Timestamp{Ts: 1234567890, NanoTs: 0},
+		NChildren: 1,
+		Key:       []byte{},
+	}
+
+	tDefaultMerkleNodeMonth = &MerkleNode{
+		Level: MerkleTreeLevelMonth,
+		Addr: []byte{
+			117, 246, 2, 234, 29, 5, 234, 183, 81, 131,
+			225, 167, 50, 194, 116, 102, 16, 203, 118, 115,
+		},
+		UpdateTS:  types.Timestamp{Ts: 1234567890, NanoTs: 0},
+		NChildren: 1,
+		Key:       []byte{},
+	}
+
+	tDefaultMerkleNodeYear = &MerkleNode{
+		Level: MerkleTreeLevelYear,
+		Addr: []byte{
+			194, 226, 122, 207, 184, 237, 91, 8, 45, 109,
+			159, 127, 14, 56, 141, 226, 220, 194, 82, 55,
+		},
+		UpdateTS:  types.Timestamp{Ts: 1234567890, NanoTs: 0},
+		NChildren: 1,
+		Key:       []byte{},
+	}
+
+	tDefaultMerkle *Merkle = nil
+
+	tDBOplog             *pttdb.LDBBatch    = nil
+	tDBOplogCore         *pttdb.LDBDatabase = nil
+	tDBOplogPrefix                          = []byte(".ttlg")
+	tDBOplogIdxPrefix                       = []byte(".ttig")
+	tDBOplogMerklePrefix                    = []byte(".ttmk")
+
 	origHandler      log.Handler
 	origGenIV        func(iv []byte) error
 	origGetTimestamp func() (types.Timestamp, error)
 	origNewSalt      func() (*types.Salt, error)
 	origRandRead     func(b []byte) (int, error)
+
+	tEntity   *BaseEntity       = &BaseEntity{}
+	tKeyMe    *ecdsa.PrivateKey = nil
+	tUserIDMe *types.PttID      = nil
+	tTsMe     types.Timestamp   = types.Timestamp{}
+
+	tDBCountPrefix = []byte(".tcct")
+	tPCount        = uint(12)
+
+	tDBLock *types.LockMap
 
 	tDefaultSignKeyBytes2 = []byte{
 		208, 12, 190, 67, 195, 69, 44, 203, 240, 208,
@@ -199,6 +354,22 @@ func setupTest(t *testing.T) {
 		return rand.Read(b)
 	}
 
+	tDBLock, _ = types.NewLockMap(10)
+
+	tKeyMe, _ = crypto.HexToECDSA("49a7b37aa6f6645917e7b807e9d1c00d4fa71f18343b0d4122a4d2df64dd6fee")
+	tUserIDMe, _ = types.NewPttIDFromKey(tKeyMe)
+	tTsMe = types.Timestamp{Ts: 1, NanoTs: 5}
+
+	tDBOplogCore, _ = pttdb.NewLDBDatabase("oplog", "./test.out", 0, 0)
+	tDBOplog, _ = pttdb.NewLDBBatch(tDBOplogCore)
+	tDefaultOplog, _ = NewOplog(tDefaultID, tDefaultTimestamp1, tMyID, MasterOpTypeAddMaster, nil, tDBOplog, tDefaultID, tDBOplogPrefix, tDBOplogIdxPrefix, tDBOplogMerklePrefix, tDBLock)
+	tDefaultOplog.Sign(tKeyMe)
+	tDefaultOplog.MasterLogID = tUserIDMe
+	tDefaultOplog2, _ = NewOplog(tDefaultID, tDefaultTimestamp2, tMyID, MasterOpTypeAddMaster, nil, tDBOplog, tDefaultID, tDBOplogPrefix, tDBOplogIdxPrefix, tDBOplogMerklePrefix, tDBLock)
+	tDefaultOplog2.Sign(tKeyMe)
+	tDefaultOplog2.MasterLogID = tUserIDMe
+	tDefaultMerkle, _ = NewMerkle(tDBOplogPrefix, tDBOplogMerklePrefix, tDefaultID, tDBOplog, tEntity)
+
 	tDefaultSignKey2, _ = crypto.ToECDSA(tDefaultSignKeyBytes2)
 
 	ts, _ := types.GetTimestamp()
@@ -214,6 +385,18 @@ func teardownTest(t *testing.T) {
 	types.RandRead = origRandRead
 
 	rand.Seed(time.Now().UnixNano())
+
+	if tDBOplogCore != nil {
+		tDBOplogCore.Close()
+		tDBOplogCore = nil
+	}
+	if tDBOplog != nil {
+		tDBOplog = nil
+	}
+
+	if tDBLock != nil {
+		tDBLock = nil
+	}
 
 	os.RemoveAll("./test.out")
 

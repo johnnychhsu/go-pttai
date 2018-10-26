@@ -73,7 +73,7 @@ type BaseEntity struct {
 	name string
 }
 
-func NewBaseEntity(id *types.PttID, creatorID *types.PttID, pm ProtocolManager, name string, ptt Ptt, service Service) (*BaseEntity, error) {
+func NewBaseEntity(id *types.PttID, creatorID *types.PttID) (*BaseEntity, error) {
 
 	ts, err := types.GetTimestamp()
 	if err != nil {
@@ -87,14 +87,16 @@ func NewBaseEntity(id *types.PttID, creatorID *types.PttID, pm ProtocolManager, 
 		CreatorID: creatorID,
 		UpdateTS:  ts,
 		UpdaterID: creatorID,
-
-		pm:      pm,
-		name:    name,
-		ptt:     ptt,
-		service: service,
 	}
 
 	return b, nil
+}
+
+func (b *BaseEntity) SetBaseEntity(pm ProtocolManager, name string, ptt Ptt, service Service) {
+	b.pm = pm
+	b.name = name
+	b.ptt = ptt
+	b.service = service
 }
 
 func (b *BaseEntity) GetVersion() types.Version {
