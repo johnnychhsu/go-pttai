@@ -45,6 +45,8 @@ var (
 
 	MyNodeSignID *types.PttID
 	MyRaftID     uint64
+
+	Me *MyInfo
 )
 
 // defaults
@@ -52,6 +54,45 @@ var (
 	DataDirPrivateKey = "mykey"
 
 	DefaultTitle = []byte("")
+)
+
+// protocol
+const (
+	_ pkgservice.OpType = iota + pkgservice.NMsg
+
+	AddDeviceMsg
+	AddDeviceAckMsg
+
+	RemoveDeviceMsg
+	RemoveDeviceAckMsg
+
+	RevokeMeMsg
+	RevokeMeAckMsg
+
+	SyncDoneMsg
+
+	JoinFriendMsg
+
+	SyncMeOplogMsg
+	SyncMeOplogAckMsg
+	SyncMeOplogNewOplogsMsg
+	SyncMeOplogNewOplogsAckMsg
+
+	SendRaftMsgsMsg
+
+	InitMeInfoMsg
+	InitMeInfoAckMsg
+	InitMeInfoSyncMsg
+
+	SyncCreateBoardMsg
+	SyncCreateBoardAckMsg
+
+	SyncCreateFriendMsg
+	SyncCreateFriendAckMsg
+
+	SyncPendingMeOplogMsg
+	SyncPendingMeOplogAckMsg
+	SyncPendingMeOplogAckAckMsg
 )
 
 // db
@@ -83,6 +124,33 @@ var (
 	DBKeyRaftLead          = []byte(".rfld")
 )
 
+// sync
+const (
+	MaxSyncRandomSeconds = 8
+	MinSyncRandomSeconds = 5
+)
+
+// join
+const (
+	SyncJoinSeconds = 10 * time.Second
+
+	RenewJoinFriendKeySeconds = pkgservice.RenewJoinKeySeconds
+)
+
+// op-key
+const (
+	RenewOpKeySeconds  uint64 = 86400
+	ExpireOpKeySeconds uint64 = 259200
+)
+
+// me-oplog
+const (
+	GenerateMeOplogMerkleTreeSeconds = 10 * time.Second
+
+	ExpireGenerateMeOplogMerkleTreeSeconds = 60
+	OffsetGenerateMeOplogMerkleTreeSeconds = 7200
+)
+
 // raft
 
 const (
@@ -91,6 +159,12 @@ const (
 	RaftHeartbeatTick   = 5
 	RaftMaxSizePerMsg   = 1024 * 1024
 	RaftMaxInflightMsgs = 16
+)
+
+// init-me-info
+
+const (
+	InitMeInfoTickTime = 3 * time.Second
 )
 
 func InitMe(dataDir string) error {

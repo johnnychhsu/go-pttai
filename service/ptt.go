@@ -74,6 +74,12 @@ type Ptt interface {
 	UnmarshalData(pttData *PttData) (CodeType, *common.Address, []byte, error)
 }
 
+type MyPtt interface {
+	Ptt
+
+	SetMyEntity(m PttMyEntity)
+}
+
 type BasePtt struct {
 	config *Config
 

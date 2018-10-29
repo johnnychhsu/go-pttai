@@ -14,41 +14,11 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-pttai library. If not, see <http://www.gnu.org/licenses/>.
 
-package service
+package me
 
 import (
-	"github.com/ailabstw/go-pttai/common"
-	"github.com/ailabstw/go-pttai/common/types"
 )
 
-type MyEntity interface {
-	GetID() *types.PttID
-
-	Name() string
-
-	NewOpKeyInfo(entityID *types.PttID) (*KeyInfo, error)
-
-	SignKey() *KeyInfo
-	GetNodeSignID() *types.PttID
-
-	IsValidInternalOplog(signInfos []*SignInfo) (*types.PttID, uint32, bool)
-}
-
-type PttMyEntity interface {
-	MyEntity
-
-	PM() ProtocolManager
-
-	// board
-	GetMyBoard() Entity
-
-	// join
-	GetJoinRequest(hash *common.Address) (*JoinRequest, error)
-	HandleApproveJoin(dataBytes []byte, hash *common.Address, joinRequest *JoinRequest, peer *PttPeer) error
-
-	// node
-	GetLenNodes() int
-
-	// oplog
-	IsValidOplog(signInfos []*SignInfo) (*types.PttID, uint32, bool)
+func MyInfoUtils() error {
+    return nil
 }

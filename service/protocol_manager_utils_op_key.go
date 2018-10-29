@@ -294,6 +294,10 @@ func (pm *BaseProtocolManager) checkNewestOpKeyInfo(keyInfo *KeyInfo, expireRene
 	return
 }
 
+func (pm *BaseProtocolManager) OpKeyInfos() map[common.Address]*KeyInfo {
+	return pm.opKeyInfos
+}
+
 func (pm *BaseProtocolManager) RenewOpKeySeconds() uint64 {
 	return pm.renewOpKeySeconds
 }

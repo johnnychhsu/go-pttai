@@ -110,8 +110,6 @@ const (
 	MaxIterDeriveKeyBIP32 = 10
 
 	SleepTimeOpKeyLock = 10
-
-	ExpireOpKeySeconds = 259200
 )
 
 var (

@@ -53,10 +53,8 @@ func (pm *BaseProtocolManager) CreateOpKeyInfo() error {
 		return nil
 	}
 
-	masterKey := myEntity.MasterKey()
-
 	// 2. new-key (new item)
-	keyInfo, err := NewOpKeyInfo(entityID, myID, masterKey)
+	keyInfo, err := myEntity.NewOpKeyInfo(entityID)
 	if err != nil {
 		return err
 	}

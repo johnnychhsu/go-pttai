@@ -99,7 +99,7 @@ looping:
 }
 
 func PMHandleMessageWrapper(pm ProtocolManager, hash *common.Address, encData []byte, peer *PttPeer) error {
-	opKeyInfo, err := pm.GetOpKeyInfoFromHash(hash)
+	opKeyInfo, err := pm.GetOpKeyInfoFromHash(hash, false)
 
 	if err != nil {
 		return err

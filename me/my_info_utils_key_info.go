@@ -14,53 +14,24 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-pttai library. If not, see <http://www.gnu.org/licenses/>.
 
-package service
+package me
 
 import (
-	"github.com/ailabstw/go-pttai/common"
 	"github.com/ailabstw/go-pttai/common/types"
+	pkgservice "github.com/ailabstw/go-pttai/service"
 )
 
-func (p *BasePtt) AddOpKey(hash *common.Address, entityID *types.PttID, isLocked bool) error {
-	if !isLocked {
-		p.LockOps()
-		defer p.UnlockOps()
+func (m *MyInfo) CreateSignKeyInfo() error {
+	keyInfo, err := pkgservice.NewSignKeyInfo(m.ID, m.ID, MyKey)
+	if err != nil {
+		return err
 	}
 
-	p.ops[*hash] = entityID
+	m.signKeyInfo = keyInfo
 
 	return nil
 }
 
-func (p *BasePtt) RemoveOpKey(hash *common.Address, entityID *types.PttID, isLocked bool) error {
-	if !isLocked {
-		p.LockOps()
-		defer p.UnlockOps()
-	}
-
-	delete(p.ops, *hash)
-
-	return nil
-}
-
-func (p *BasePtt) LockOps() {
-	p.lockOps.Lock()
-}
-
-func (p *BasePtt) UnlockOps() {
-	p.lockOps.Unlock()
-}
-
-func (p *BasePtt) RemoveOpHash(hash *common.Address) error {
-	entityID, ok := p.ops[*hash]
-	if !ok {
-		return nil
-	}
-
-	entity, ok := p.entities[*entityID]
-	if !ok {
-		return p.RemoveOpKey(hash, entityID, false)
-	}
-
-	return entity.PM().RemoveOpKeyInfoFromHash(hash, false)
+func (m *MyInfo) NewOpKeyInfo(entityID *types.PttID) (*pkgservice.KeyInfo, error) {
+	return pkgservice.NewOpKeyInfo(entityID, m.ID, MyKey)
 }

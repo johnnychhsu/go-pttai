@@ -14,41 +14,33 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-pttai library. If not, see <http://www.gnu.org/licenses/>.
 
-package service
+package me
 
 import (
-	"github.com/ailabstw/go-pttai/common"
-	"github.com/ailabstw/go-pttai/common/types"
+	"github.com/ailabstw/go-pttai/raft"
+	pb "github.com/ailabstw/go-pttai/raft/raftpb"
 )
 
-type MyEntity interface {
-	GetID() *types.PttID
+func (pm *ProtocolManager) PublishRaftSnapshot(snap pb.Snapshot) error {
+	if raft.IsEmptySnap(snap) {
+		return nil
+	}
 
-	Name() string
+	pm.lockRaftAppliedIndex.Lock()
+	defer pm.lockRaftAppliedIndex.Unlock()
 
-	NewOpKeyInfo(entityID *types.PttID) (*KeyInfo, error)
+	raftAppliedIndex := pm.GetRaftAppliedIndex(true)
+	if snap.Metadata.Index <= raftAppliedIndex {
+		return ErrInvalidRaftIndex
+	}
 
-	SignKey() *KeyInfo
-	GetNodeSignID() *types.PttID
+	pm.SetRaftConfState(snap.Metadata.ConfState, false)
+	pm.SetRaftSnapshotIndex(snap.Metadata.Index, false)
+	pm.SetRaftAppliedIndex(snap.Metadata.Index, true)
 
-	IsValidInternalOplog(signInfos []*SignInfo) (*types.PttID, uint32, bool)
+	return nil
 }
 
-type PttMyEntity interface {
-	MyEntity
-
-	PM() ProtocolManager
-
-	// board
-	GetMyBoard() Entity
-
-	// join
-	GetJoinRequest(hash *common.Address) (*JoinRequest, error)
-	HandleApproveJoin(dataBytes []byte, hash *common.Address, joinRequest *JoinRequest, peer *PttPeer) error
-
-	// node
-	GetLenNodes() int
-
-	// oplog
-	IsValidOplog(signInfos []*SignInfo) (*types.PttID, uint32, bool)
+func (pm *ProtocolManager) MaybeTriggerRaftSnapshot() error {
+	return nil
 }

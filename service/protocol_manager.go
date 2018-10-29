@@ -79,20 +79,16 @@ type ProtocolManager interface {
 	JoinKeyInfos() []*KeyInfo
 
 	// op
-	GetOpKeyInfoFromHash(hash *common.Address) (*KeyInfo, error)
-	GetNewestOpKey() (*KeyInfo, error)
-	GetOldestOpKey() (*KeyInfo, error)
+	GetOpKeyInfoFromHash(hash *common.Address, isLocked bool) (*KeyInfo, error)
+	GetNewestOpKey(isLocked bool) (*KeyInfo, error)
+	GetOldestOpKey(isLocked bool) (*KeyInfo, error)
 
-	RegisterOpKeyInfo(keyInfo *KeyInfo) error
+	RegisterOpKeyInfo(keyInfo *KeyInfo, isLocked bool) error
 
-	RemoveOpKeyInfoFromHash(hash *common.Address) error
-	RemoveOpKeyInfo(keyInfo *KeyInfo) error
+	RemoveOpKeyInfoFromHash(hash *common.Address, isLocked bool) error
+	RemoveOpKeyInfo(keyInfo *KeyInfo, isLocked bool) error
 
 	OpKeyInfos() map[common.Address]*KeyInfo
-
-	SaveOpKeyInfo(opKeyInfo *KeyInfo) error
-
-	RevokeKeyChan() chan *KeyInfo
 
 	RenewOpKeySeconds() uint64
 	ExpireOpKeySeconds() uint64
