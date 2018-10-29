@@ -17,33 +17,43 @@
 package service
 
 import (
-	"github.com/ailabstw/go-pttai/common"
 	"github.com/ailabstw/go-pttai/common/types"
+	"github.com/ailabstw/go-pttai/p2p/discover"
 )
 
-type MyEntity interface {
-	GetID() *types.PttID
-	GetStatus() types.Status
+const (
+	_ OpType = iota
+	MeOpTypeCreateMe
+	MeOpTypeSetNodeName
+	MeOpTypeCreateBoard
+	MeOpTypeJoinBoard
+	MeOpTypeCreateFriend
+	MeOpTypeJoinFriend
 
-	Name() string
+	NMeOpType
+)
 
-	NewOpKeyInfo(entityID *types.PttID) (*KeyInfo, error)
-
-	SignKey() *KeyInfo
-	GetNodeSignID() *types.PttID
-
-	IsValidInternalOplog(signInfos []*SignInfo) (*types.PttID, uint32, bool)
+type MeOpCreateMe struct {
+	NodeID   *discover.NodeID `json:"NID"`
+	NodeType NodeType         `json:"NT"`
+	NodeName []byte           `json:"n"`
 }
 
-type PttMyEntity interface {
-	MyEntity
+type MeOpSetNodeName struct {
+	NodeID *discover.NodeID `json:"NID"`
+	Name   []byte           `json:"n"`
+}
 
-	MyPM() MyProtocolManager
+type MeOpCreateBoard struct {
+}
 
-	// join
-	GetJoinRequest(hash *common.Address) (*JoinRequest, error)
-	HandleApproveJoin(dataBytes []byte, hash *common.Address, joinRequest *JoinRequest, peer *PttPeer) error
+type MeOpCreateFriend struct {
+	FriendID *types.PttID `json:"FID"`
+}
 
-	// node
-	GetLenNodes() int
+type MeOpJoinBoard struct {
+}
+
+type MeOpJoinFriend struct {
+	FriendID *types.PttID `json:"FID"`
 }

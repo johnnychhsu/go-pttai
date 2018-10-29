@@ -199,7 +199,7 @@ func (pm *BaseProtocolManager) InternalSign(log *Oplog) (bool, error) {
 	}
 
 	ptt := pm.Ptt()
-	myEntity := ptt.MyEntity()
+	myEntity := ptt.GetMyEntity()
 	myID := myEntity.GetID()
 
 	// check
@@ -267,7 +267,8 @@ func (pm *BaseProtocolManager) InternalSign(log *Oplog) (bool, error) {
 	return true, nil
 }
 
-func (pm *BaseProtocolManager) GetPendingOplogs(setDB func(*Oplog)) ([]*Oplog, []*Oplog, error) {
+func (pm *BaseProtocolManager) GetPendingOplogs(setDB func(log *Oplog)) ([]*Oplog, []*Oplog, error) {
+
 	log := &Oplog{}
 	setDB(log)
 
@@ -351,7 +352,7 @@ func (pm *BaseProtocolManager) validateIntegrateSign(log *Oplog, isLocked bool) 
 	}
 
 	ptt := pm.Ptt()
-	myEntity := ptt.MyEntity()
+	myEntity := ptt.GetMyEntity()
 	myID := myEntity.GetID()
 	key := ptt.SignKey()
 
@@ -375,6 +376,7 @@ func (pm *BaseProtocolManager) validateIntegrateSign(log *Oplog, isLocked bool) 
 }
 
 func (pm *BaseProtocolManager) RemoveNonSyncOplog(setDB func(log *Oplog), logID *types.PttID, isRetainValid bool, isLocked bool) (*Oplog, error) {
+
 	log := &Oplog{}
 	setDB(log)
 	log.ID = logID

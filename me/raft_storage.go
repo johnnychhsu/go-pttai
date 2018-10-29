@@ -527,7 +527,7 @@ func (rs *RaftStorage) GetIter(idx uint64) (iterator.Iterator, error) {
 		Start: startKey,
 		Limit: endKey,
 	}
-	iter := dbRaft.NewIteratorWithRange(r)
+	iter := dbRaft.NewIteratorWithRange(r, pttdb.ListOrderNext)
 	return iter, nil
 }
 
@@ -543,14 +543,7 @@ func (rs *RaftStorage) GetPrevIter(idx uint64) (iterator.Iterator, error) {
 		Limit: endKey,
 	}
 
-	iter := dbRaft.NewIteratorWithRange(r)
-
-	isSeeked := iter.Seek(endKey)
-	if isSeeked {
-		log.Error("GetPrevIter: got endKey", "idx", idx, "endKey", endKey, "isSeeked", isSeeked)
-	} else {
-		log.Debug("GetPrevIter", "idx", idx, "endKey", endKey, "isSeeked", isSeeked)
-	}
+	iter := dbRaft.NewIteratorWithRange(r, pttdb.ListOrderPrev)
 
 	return iter, nil
 }

@@ -41,7 +41,7 @@ func (pm *BaseProtocolManager) CreateOpKeyInfo() error {
 	entity := pm.Entity()
 
 	entityID := pm.Entity().GetID()
-	myEntity := ptt.MyEntity()
+	myEntity := ptt.GetMyEntity()
 	myID := myEntity.GetID()
 
 	// 1. validate

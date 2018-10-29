@@ -197,7 +197,7 @@ func (pm *ProtocolManager) publishEntriesAddNode(ent *pb.Entry, cc *pb.ConfChang
 		}
 
 	} else {
-		opKey, err := pm.GetOpKey()
+		opKey, err := pm.GetOldestOpKey(false)
 		if err != nil {
 			return err
 		}
@@ -220,8 +220,8 @@ func (pm *ProtocolManager) publishEntriesAddNodeCreateMasterOplogAndSetMyNode(ts
 	myID := myInfo.ID
 
 	// lock
-	pm.LockMyNodes.Lock()
-	defer pm.LockMyNodes.Unlock()
+	pm.lockMyNodes.Lock()
+	defer pm.lockMyNodes.Unlock()
 
 	masters := make(map[discover.NodeID]uint32)
 	for _, eachNode := range pm.MyNodes {
@@ -299,8 +299,8 @@ func (pm *ProtocolManager) publishEntriesRemoveNode(ent *pb.Entry, cc *pb.ConfCh
 		return ErrInvalidEntry
 	}
 
-	pm.LockMyNodes.Lock()
-	defer pm.LockMyNodes.Unlock()
+	pm.lockMyNodes.Lock()
+	defer pm.lockMyNodes.Unlock()
 
 	ts, err := types.GetTimestamp()
 	if err != nil {

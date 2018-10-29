@@ -37,22 +37,22 @@ func NewOpKeyOplog(keyID *types.PttID, ts types.Timestamp, doerID *types.PttID, 
 	}, nil
 }
 
-func (pm *BaseProtocolManager) setOpKeyDB(log *Oplog) {
+func (pm *BaseProtocolManager) SetOpKeyDB(log *Oplog) {
 	entityID := pm.Entity().GetID()
 	log.SetDB(pm.DBOpKeyInfo(), entityID, DBOpKeyOplogPrefix, DBOpKeyIdxOplogPrefix, DBOpKeyMerkleOplogPrefix, pm.DBOpKeyLock())
 }
 
 func OplogsToOpKeyOplogs(logs []*Oplog) []*OpKeyOplog {
-	opKeyLogs := make([]*OpKeyOplog, len(logs))
+	typedLogs := make([]*OpKeyOplog, len(logs))
 	for i, log := range logs {
-		opKeyLogs[i] = &OpKeyOplog{Oplog: log}
+		typedLogs[i] = &OpKeyOplog{Oplog: log}
 	}
-	return opKeyLogs
+	return typedLogs
 }
 
-func OpKeyOplogsToOplogs(opKeyLogs []*OpKeyOplog) []*Oplog {
-	logs := make([]*Oplog, len(opKeyLogs))
-	for i, log := range opKeyLogs {
+func OpKeyOplogsToOplogs(typedLogs []*OpKeyOplog) []*Oplog {
+	logs := make([]*Oplog, len(typedLogs))
+	for i, log := range typedLogs {
 		logs[i] = log.Oplog
 	}
 	return logs

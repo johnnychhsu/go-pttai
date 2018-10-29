@@ -14,36 +14,12 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-pttai library. If not, see <http://www.gnu.org/licenses/>.
 
-package service
+package me
 
-import (
-	"github.com/ailabstw/go-pttai/common"
-	"github.com/ailabstw/go-pttai/common/types"
-)
+import pkgservice "github.com/ailabstw/go-pttai/service"
 
-type MyEntity interface {
-	GetID() *types.PttID
-	GetStatus() types.Status
-
-	Name() string
-
-	NewOpKeyInfo(entityID *types.PttID) (*KeyInfo, error)
-
-	SignKey() *KeyInfo
-	GetNodeSignID() *types.PttID
-
-	IsValidInternalOplog(signInfos []*SignInfo) (*types.PttID, uint32, bool)
-}
-
-type PttMyEntity interface {
-	MyEntity
-
-	MyPM() MyProtocolManager
-
-	// join
-	GetJoinRequest(hash *common.Address) (*JoinRequest, error)
-	HandleApproveJoin(dataBytes []byte, hash *common.Address, joinRequest *JoinRequest, peer *PttPeer) error
-
-	// node
-	GetLenNodes() int
+func (pm *ProtocolManager) SetMeDB(log *pkgservice.Oplog) {
+	myID := pm.Entity().GetID()
+	myPtt := pm.myPtt
+	log.SetDB(myPtt.DBOplog(), myID, pkgservice.DBMeOplogPrefix, pkgservice.DBMeIdxOplogPrefix, pkgservice.DBMeMerkleOplogPrefix, pkgservice.DBMeLockMap)
 }

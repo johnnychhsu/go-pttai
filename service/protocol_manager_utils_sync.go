@@ -32,10 +32,6 @@ func (pm *BaseProtocolManager) QuitSync() chan struct{} {
 	return pm.quitSync
 }
 
-func (pm *BaseProtocolManager) SetQuitSync(quitSync chan struct{}) {
-	pm.quitSync = quitSync
-}
-
 func (pm *BaseProtocolManager) SyncWG() *sync.WaitGroup {
 	return pm.syncWG
 }

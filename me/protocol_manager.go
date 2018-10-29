@@ -30,7 +30,8 @@ import (
 
 type ProtocolManager struct {
 	*pkgservice.BaseProtocolManager
-	MyInfo *MyInfo
+
+	myPtt pkgservice.MyPtt
 
 	// key-infos for providing join-friend
 	lockJoinFriendKeyInfo sync.RWMutex
@@ -46,7 +47,7 @@ type ProtocolManager struct {
 	joinMeRequests    map[common.Address]*pkgservice.JoinRequest
 	joinMeSub         *event.TypeMuxSubscription
 
-	LockMyNodes         sync.RWMutex
+	lockMyNodes         sync.RWMutex
 	MyNodes             map[uint64]*MyNode
 	MyNodeByNodeSignIDs map[types.PttID]*MyNode
 	totalWeight         uint32
@@ -58,7 +59,6 @@ type ProtocolManager struct {
 	raftCommitC          chan *string
 	raftErrorC           chan error
 
-	// XXX unsure what LastIndex is for
 	lockRaftLead sync.RWMutex
 	raftLead     uint64
 
@@ -78,15 +78,10 @@ type ProtocolManager struct {
 	rs       *RaftStorage
 }
 
-func NewProtocolManager(myInfo *MyInfo, ptt pkgservice.Ptt) (*ProtocolManager, error) {
-	b, err := pkgservice.NewBaseProtocolManager(ptt, RenewOpKeySeconds, ExpireOpKeySeconds, MaxSyncRandomSeconds, MinSyncRandomSeconds, myInfo, dbMeBatch)
-	if err != nil {
-		return nil, err
-	}
+func NewProtocolManager(myInfo *MyInfo, ptt pkgservice.MyPtt) (*ProtocolManager, error) {
 
 	pm := &ProtocolManager{
-		BaseProtocolManager: b,
-		MyInfo:              myInfo,
+		myPtt: ptt,
 
 		joinFriendKeyInfos: make([]*pkgservice.KeyInfo, 0),
 		joinFriendRequests: make(map[common.Address]*pkgservice.JoinRequest),
@@ -100,6 +95,12 @@ func NewProtocolManager(myInfo *MyInfo, ptt pkgservice.Ptt) (*ProtocolManager, e
 		raftCommitC:          make(chan *string),
 		raftErrorC:           make(chan error),
 	}
+
+	b, err := pkgservice.NewBaseProtocolManager(ptt, RenewOpKeySeconds, ExpireOpKeySeconds, MaxSyncRandomSeconds, MinSyncRandomSeconds, pm.IsValidOplog, myInfo, dbMeBatch)
+	if err != nil {
+		return nil, err
+	}
+	pm.BaseProtocolManager = b
 
 	err = pm.LoadMyNodes()
 	if err != nil {
@@ -134,7 +135,7 @@ func (pm *ProtocolManager) Start() error {
 	case types.StatusInternalSync:
 		go pm.StartRaft(nil, true)
 	case types.StatusPending:
-		weight := nodeTypeToWeight(MyNodeType)
+		weight := pm.nodeTypeToWeight(MyNodeType)
 		raftPeerList := []raft.Peer{{ID: MyRaftID, Weight: weight, Context: MyNodeID[:]}}
 		go pm.StartRaft(raftPeerList, true)
 	case types.StatusAlive:
@@ -145,19 +146,12 @@ func (pm *ProtocolManager) Start() error {
 	pm.joinMeSub = pm.EventMux().Subscribe(&JoinMeEvent{})
 	go pm.JoinMeLoop()
 
-	go pm.GenerateJoinKeyInfoLoop()
+	go pm.CreateJoinKeyInfoLoop()
 	go pm.SyncJoinMeLoop()
 
-	// join-friend
-	pm.joinFriendSub = pm.EventMux().Subscribe(&JoinFriendEvent{})
-	go pm.JoinFriendLoop()
-
-	go pm.GenerateJoinFriendKeyInfoLoop()
-	go pm.SyncJoinFriendLoop()
-
 	// oplog-merkle-tree
-	go pkgservice.PMGenerateOplogMerkleTreeLoop(pm, pm.Ptt().MeOplogMerkle)
-	go pkgservice.PMGenerateOplogMerkleTreeLoop(pm, pm.Ptt().MasterOplogMerkle)
+	go pkgservice.PMOplogMerkleTreeLoop(pm, pm.myPtt.MeOplogMerkle())
+	go pkgservice.PMOplogMerkleTreeLoop(pm, pm.myPtt.MasterOplogMerkle())
 
 	go pm.InitMeInfoLoop()
 
@@ -167,6 +161,8 @@ func (pm *ProtocolManager) Start() error {
 }
 
 func (pm *ProtocolManager) Stop() error {
+	pm.BaseProtocolManager.PreStop()
+
 	pm.StopRaft()
 
 	pm.joinFriendSub.Unsubscribe()
@@ -182,16 +178,15 @@ func (pm *ProtocolManager) Stop() error {
 
 func (pm *ProtocolManager) Sync(peer *pkgservice.PttPeer) error {
 	if peer == nil {
-		peerList := pm.Peers().PeerList()
+		peerList := pm.Peers().PeerList(false)
 		if len(peerList) == 0 {
 			return nil
 		}
 		peer = pkgservice.RandomPeer(peerList)
 	}
 
-	ptt := pm.Ptt()
-	err := pkgservice.PMSyncOplog(pm, peer, ptt.MeOplogMerkle, SyncMeOplogMsg)
-	// err := pm.SyncMeOplog(peer)
+	ptt := pm.myPtt
+	err := pm.SyncOplog(peer, ptt.MeOplogMerkle(), SyncMeOplogMsg)
 	if err != nil {
 		return err
 	}
@@ -202,10 +197,6 @@ func (pm *ProtocolManager) Sync(peer *pkgservice.PttPeer) error {
 func (pm *ProtocolManager) GetJoinType(hash *common.Address) (pkgservice.JoinType, error) {
 	if pm.IsJoinMeKeyHash(hash) {
 		return pkgservice.JoinTypeMe, nil
-	}
-
-	if pm.IsJoinFriendKeyHash(hash) {
-		return pkgservice.JoinTypeFriend, nil
 	}
 
 	return pkgservice.JoinTypeInvalid, pkgservice.ErrInvalidData

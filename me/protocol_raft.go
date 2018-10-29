@@ -145,12 +145,12 @@ loop:
 			raftEntriesToApply, err := pm.raftEntriesToApply(rd.CommittedEntries)
 			log.Debug("ServeRaftChannels: after raftEntriesToApply", "raftEntriesToAppply", raftEntriesToApply, "e", err)
 			if err != nil {
-				ptt.ErrChan.PassChan(err)
+				ptt.ErrChan().PassChan(err)
 				break loop
 			}
 
 			if err := pm.PublishRaftEntries(raftEntriesToApply); err != nil {
-				ptt.ErrChan.PassChan(err)
+				ptt.ErrChan().PassChan(err)
 				break loop
 			}
 			pm.MaybeTriggerRaftSnapshot()

@@ -20,8 +20,8 @@ import (
 	"github.com/ailabstw/go-pttai/common/types"
 )
 
-func (pm *BaseProtocolManager) getOpKeyOplogsFromKeys(keys [][]byte) ([]*OpKeyOplog, error) {
-	logs, err := pm.GetOplogsFromKeys(pm.setOpKeyDB, keys)
+func (pm *BaseProtocolManager) GetOpKeyOplogsFromKeys(keys [][]byte) ([]*OpKeyOplog, error) {
+	logs, err := pm.GetOplogsFromKeys(pm.SetOpKeyDB, keys)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +36,7 @@ func (pm *BaseProtocolManager) IntegrateOpKeyOplog(log *OpKeyOplog, isLocked boo
 }
 
 func (pm *BaseProtocolManager) GetPendingOpKeyOplogs() ([]*OpKeyOplog, []*OpKeyOplog, error) {
-	logs, failedLogs, err := pm.GetPendingOplogs(pm.setOpKeyDB)
+	logs, failedLogs, err := pm.GetPendingOplogs(pm.SetOpKeyDB)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -70,7 +70,7 @@ func (pm *BaseProtocolManager) SetOpKeyOplogIsSync(log *OpKeyOplog, isBroadcast 
 }
 
 func (pm *BaseProtocolManager) RemoveNonSyncOpKeyOplog(logID *types.PttID, isRetainValid bool, isLocked bool) (*OpKeyOplog, error) {
-	log, err := pm.RemoveNonSyncOplog(pm.setOpKeyDB, logID, isRetainValid, isLocked)
+	log, err := pm.RemoveNonSyncOplog(pm.SetOpKeyDB, logID, isRetainValid, isLocked)
 	if err != nil {
 		return nil, err
 	}

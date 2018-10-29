@@ -17,33 +17,39 @@
 package service
 
 import (
-	"encoding/binary"
-
-	"github.com/ailabstw/go-pttai/common"
 	"github.com/ailabstw/go-pttai/common/types"
+	"github.com/ailabstw/go-pttai/log"
 )
 
-func (p *BasePtt) CreateMasterOplog(raftIdx uint64, ts types.Timestamp, op OpType, data interface{}) (*MasterOplog, error) {
-	key := p.SignKey()
-	myID := p.myEntity.GetID()
-	nodeSignID := p.myEntity.GetNodeSignID()
+type MeOplog struct {
+	*Oplog `json:"O"`
+}
 
-	oplog, err := NewMasterOplog(myID, ts, nodeSignID, op, data)
+func NewMeOplog(objID *types.PttID, ts types.Timestamp, doerID *types.PttID, op OpType, data interface{}, myID *types.PttID) (*MeOplog, error) {
+	oplog, err := NewOplog(objID, ts, doerID, op, data, dbOplog, myID, DBMeOplogPrefix, DBMeIdxOplogPrefix, DBMeMerkleOplogPrefix, DBMeLockMap)
 	if err != nil {
 		return nil, err
 	}
 
-	// oplog.ID
-	binary.BigEndian.PutUint64(oplog.ID[OffsetMasterOplogRaftIdx:], raftIdx)
-	copy(oplog.ID[common.AddressLength:], myID[:common.AddressLength])
+	log.Debug("NewMeOplog: after NewOplog", "myID", myID, "prefixID", oplog.dbPrefixID)
 
-	err = oplog.Sign(key)
-	if err != nil {
-		return nil, err
+	return &MeOplog{
+		Oplog: oplog,
+	}, nil
+}
+
+func OplogsToMeOplogs(logs []*Oplog) []*MeOplog {
+	typedLogs := make([]*MeOplog, len(logs))
+	for i, log := range logs {
+		typedLogs[i] = &MeOplog{Oplog: log}
 	}
+	return typedLogs
+}
 
-	p.myEntity.MyPM().SetNewestMasterLogID(oplog.ID)
-	oplog.MasterLogID = oplog.ID
-
-	return oplog, nil
+func MeOplogsToOplogs(typedLogs []*MeOplog) []*Oplog {
+	logs := make([]*Oplog, len(typedLogs))
+	for i, log := range typedLogs {
+		logs[i] = log.Oplog
+	}
+	return logs
 }

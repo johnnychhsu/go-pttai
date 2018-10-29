@@ -16,6 +16,12 @@
 
 package service
 
+import (
+	"sync"
+
+	"github.com/ailabstw/go-pttai/common/types"
+)
+
 /*
 ServiceProtocolManager manage service-level operations.
 
@@ -32,18 +38,33 @@ type ServiceProtocolManager interface {
 	Start() error
 	Stop() error
 
+	// entities
+	Entities() map[types.PttID]Entity
+	Entity(id *types.PttID) Entity
+
+	RegisterEntity(id *types.PttID, e Entity) error
+	UnregisterEntity(id *types.PttID) error
+
 	Ptt() Ptt
 	Service() Service
 }
 
 type BaseServiceProtocolManager struct {
+	lock     sync.RWMutex
+	entities map[types.PttID]Entity
+
+	noMorePeers chan struct{}
+
 	ptt     Ptt
 	service Service
 }
 
 func NewBaseServiceProtocolManager(ptt Ptt, service Service) (*BaseServiceProtocolManager, error) {
 	spm := &BaseServiceProtocolManager{
-		ptt: ptt,
+		entities: make(map[types.PttID]Entity),
+
+		noMorePeers: ptt.NoMorePeers(),
+		ptt:         ptt,
 
 		service: service,
 	}
@@ -51,18 +72,67 @@ func NewBaseServiceProtocolManager(ptt Ptt, service Service) (*BaseServiceProtoc
 	return spm, nil
 }
 
-func (b *BaseServiceProtocolManager) Start() error {
+func (spm *BaseServiceProtocolManager) Start() error {
 	return nil
 }
 
-func (b *BaseServiceProtocolManager) Stop() error {
+func (spm *BaseServiceProtocolManager) Stop() error {
 	return nil
 }
 
-func (b *BaseServiceProtocolManager) Ptt() Ptt {
-	return b.ptt
+func (spm *BaseServiceProtocolManager) Entities() map[types.PttID]Entity {
+	return spm.entities
 }
 
-func (b *BaseServiceProtocolManager) Service() Service {
-	return b.service
+func (spm *BaseServiceProtocolManager) Ptt() Ptt {
+	return spm.ptt
+}
+
+func (spm *BaseServiceProtocolManager) Service() Service {
+	return spm.service
+}
+
+func (spm *BaseServiceProtocolManager) Entity(id *types.PttID) Entity {
+	spm.lock.RLock()
+	defer spm.lock.RUnlock()
+
+	entity, ok := spm.entities[*id]
+	if !ok {
+		return nil
+	}
+	return entity
+}
+
+/*
+RegisterEntity register the entity to the service
+
+need to do lock in the beginning because need to update entitiesByPeerID
+*/
+func (spm *BaseServiceProtocolManager) RegisterEntity(id *types.PttID, e Entity) error {
+	spm.lock.Lock()
+	defer spm.lock.Unlock()
+
+	_, ok := spm.entities[*id]
+	if ok {
+		return ErrEntityAlreadyRegistered
+	}
+
+	spm.entities[*id] = e
+	e.PM().SetNoMorePeers(spm.noMorePeers)
+
+	return nil
+}
+
+func (spm *BaseServiceProtocolManager) UnregisterEntity(id *types.PttID) error {
+	spm.lock.Lock()
+	defer spm.lock.Unlock()
+
+	_, ok := spm.entities[*id]
+	if !ok {
+		return ErrEntityNotRegistered
+	}
+
+	delete(spm.entities, *id)
+
+	return nil
 }

@@ -14,36 +14,34 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-pttai library. If not, see <http://www.gnu.org/licenses/>.
 
-package service
+package me
 
 import (
-	"github.com/ailabstw/go-pttai/common"
 	"github.com/ailabstw/go-pttai/common/types"
+	"github.com/ailabstw/go-pttai/pttdb"
+	"github.com/syndtr/goleveldb/leveldb/iterator"
 )
 
-type MyEntity interface {
-	GetID() *types.PttID
-	GetStatus() types.Status
+func getMeIter(startingID *types.PttID) (iterator.Iterator, error) {
+	if startingID == nil {
+		return dbMeBatch.DB().NewIteratorWithPrefix(nil, DBMePrefix, pttdb.ListOrderNext)
+	}
 
-	Name() string
+	// key
+	myInfo := &MyInfo{
+		ID: startingID,
+	}
 
-	NewOpKeyInfo(entityID *types.PttID) (*KeyInfo, error)
+	key, err := myInfo.MarshalKey()
+	if err != nil {
+		return nil, err
+	}
 
-	SignKey() *KeyInfo
-	GetNodeSignID() *types.PttID
+	// iter
+	iter, err := dbMeBatch.DB().NewIteratorWithPrefix(key, DBMePrefix, pttdb.ListOrderNext)
+	if err != nil {
+		return nil, err
+	}
 
-	IsValidInternalOplog(signInfos []*SignInfo) (*types.PttID, uint32, bool)
-}
-
-type PttMyEntity interface {
-	MyEntity
-
-	MyPM() MyProtocolManager
-
-	// join
-	GetJoinRequest(hash *common.Address) (*JoinRequest, error)
-	HandleApproveJoin(dataBytes []byte, hash *common.Address, joinRequest *JoinRequest, peer *PttPeer) error
-
-	// node
-	GetLenNodes() int
+	return iter, nil
 }

@@ -24,6 +24,7 @@ import (
 	"github.com/ailabstw/go-pttai/account"
 	"github.com/ailabstw/go-pttai/common"
 	"github.com/ailabstw/go-pttai/common/types"
+	"github.com/ailabstw/go-pttai/content"
 	"github.com/ailabstw/go-pttai/crypto"
 	"github.com/ailabstw/go-pttai/log"
 	"github.com/ailabstw/go-pttai/pttdb"
@@ -87,6 +88,8 @@ func NewMyInfo(id *types.PttID, myKey *ecdsa.PrivateKey, ptt pkgservice.MyPtt, s
 	}
 	m.OwnerID = id
 
+	ptt.SetMyEntity(m)
+
 	err = m.CreateSignKeyInfo()
 	if err != nil {
 		return nil, err
@@ -107,12 +110,10 @@ func (m *MyInfo) Init(ptt pkgservice.MyPtt, service pkgservice.Service) error {
 		return nil
 	}
 
-	ptt.SetMyEntity(m)
-
 	return nil
 }
 
-func (m *MyInfo) InitPM(ptt pkgservice.Ptt, service pkgservice.Service) error {
+func (m *MyInfo) InitPM(ptt pkgservice.MyPtt, service pkgservice.Service) error {
 	pm, err := NewProtocolManager(m, ptt)
 	if err != nil {
 		log.Error("InitPM: unable to NewProtocolManager", "e", err)
@@ -185,7 +186,7 @@ func (m *MyInfo) Save() error {
 }
 
 // Remember to do InitPM when necessary.
-func (m *MyInfo) Get(id *types.PttID, ptt pkgservice.Ptt, service pkgservice.Service) error {
+func (m *MyInfo) Get(id *types.PttID, ptt pkgservice.Ptt, service pkgservice.Service, contentBackend *content.Backend) error {
 	m.ID = id
 
 	key, err := m.MarshalKey()
@@ -266,10 +267,6 @@ func (m *MyInfo) SignKey() *pkgservice.KeyInfo {
 	return m.signKeyInfo
 }
 
-func (m *MyInfo) GetMyBoard() pkgservice.Entity {
-	return m.Board
-}
-
 func (m *MyInfo) SignKeyInfo() *pkgservice.KeyInfo {
 	return m.signKeyInfo
 }
@@ -288,4 +285,8 @@ func (m *MyInfo) IsValidInternalOplog(signInfos []*pkgservice.SignInfo) (*types.
 
 func (m *MyInfo) GetStatus() types.Status {
 	return m.Status
+}
+
+func (m *MyInfo) MyPM() pkgservice.MyProtocolManager {
+	return m.PM().(*ProtocolManager)
 }

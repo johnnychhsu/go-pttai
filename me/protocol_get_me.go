@@ -14,36 +14,20 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-pttai library. If not, see <http://www.gnu.org/licenses/>.
 
-package service
+package me
 
-import (
-	"github.com/ailabstw/go-pttai/common"
-	"github.com/ailabstw/go-pttai/common/types"
-)
+import "github.com/ailabstw/go-pttai/content"
 
-type MyEntity interface {
-	GetID() *types.PttID
-	GetStatus() types.Status
+func (spm *ServiceProtocolManager) GetMe(contentBackend *content.Backend) (*MyInfo, error) {
 
-	Name() string
+	myInfo := &MyInfo{}
 
-	NewOpKeyInfo(entityID *types.PttID) (*KeyInfo, error)
+	ptt := spm.Ptt()
+	service := spm.Service()
+	err := myInfo.Get(MyID, ptt, service, contentBackend)
+	if err != nil {
+		return nil, err
+	}
 
-	SignKey() *KeyInfo
-	GetNodeSignID() *types.PttID
-
-	IsValidInternalOplog(signInfos []*SignInfo) (*types.PttID, uint32, bool)
-}
-
-type PttMyEntity interface {
-	MyEntity
-
-	MyPM() MyProtocolManager
-
-	// join
-	GetJoinRequest(hash *common.Address) (*JoinRequest, error)
-	HandleApproveJoin(dataBytes []byte, hash *common.Address, joinRequest *JoinRequest, peer *PttPeer) error
-
-	// node
-	GetLenNodes() int
+	return myInfo, nil
 }

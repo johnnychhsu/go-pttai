@@ -54,7 +54,7 @@ func NewBackend(ctx *pkgservice.ServiceContext, cfg *Config, ptt *pkgservice.Bas
 		friendBackend:  friendBacked,
 	}
 
-	spm, err := NewServiceProtocolManager(ptt, backend)
+	spm, err := NewServiceProtocolManager(ptt, backend, contentBackend)
 	if err != nil {
 		return nil, err
 	}

@@ -14,36 +14,39 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-pttai library. If not, see <http://www.gnu.org/licenses/>.
 
-package service
+package me
 
 import (
-	"github.com/ailabstw/go-pttai/common"
 	"github.com/ailabstw/go-pttai/common/types"
+	pkgservice "github.com/ailabstw/go-pttai/service"
 )
 
-type MyEntity interface {
-	GetID() *types.PttID
-	GetStatus() types.Status
+func (pm *ProtocolManager) InternalSyncToAlive(oplog *pkgservice.MasterOplog, weight uint32) error {
 
-	Name() string
+	// my-info
+	myInfo := pm.Entity().(*MyInfo)
+	myInfo.Status = types.StatusAlive
+	myInfo.LogID = oplog.ID
+	myInfo.UpdateTS = oplog.UpdateTS
 
-	NewOpKeyInfo(entityID *types.PttID) (*KeyInfo, error)
+	err := myInfo.Save()
+	if err != nil {
+		return err
+	}
 
-	SignKey() *KeyInfo
-	GetNodeSignID() *types.PttID
+	myNode := pm.MyNodes[MyRaftID]
+	myNode.Status = types.StatusAlive
+	myNode.UpdateTS = oplog.UpdateTS
 
-	IsValidInternalOplog(signInfos []*SignInfo) (*types.PttID, uint32, bool)
-}
+	_, err = myNode.Save()
+	if err != nil {
+		return err
+	}
 
-type PttMyEntity interface {
-	MyEntity
+	expectedWeight := pm.nodeTypeToWeight(MyNodeType)
+	if weight != expectedWeight {
+		pm.ProposeRaftAddNode(MyNodeID, expectedWeight)
+	}
 
-	MyPM() MyProtocolManager
-
-	// join
-	GetJoinRequest(hash *common.Address) (*JoinRequest, error)
-	HandleApproveJoin(dataBytes []byte, hash *common.Address, joinRequest *JoinRequest, peer *PttPeer) error
-
-	// node
-	GetLenNodes() int
+	return nil
 }

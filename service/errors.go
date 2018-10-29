@@ -40,6 +40,7 @@ var (
 	ErrServiceUnknown = errors.New("service unknown")
 
 	ErrInvalidMsgCode = errors.New("invalid msg code")
+	ErrInvalidMsg     = errors.New("invalid msg")
 
 	ErrNotSent = errors.New("not sent")
 

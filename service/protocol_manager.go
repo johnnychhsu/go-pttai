@@ -49,7 +49,17 @@ type ProtocolManager interface {
 	GetOwnerID(isLocked bool) *types.PttID
 
 	// oplog
-	isValidOplog(signInfos []*SignInfo) (*types.PttID, uint32, bool)
+	BroadcastOplog(log *Oplog, msg OpType, pendingMsg OpType) error
+	BroadcastOplogs(logs []*Oplog, msg OpType, pendingMsg OpType) error
+
+	GetOplogsFromKeys(setDB func(log *Oplog), keys [][]byte) ([]*Oplog, error)
+
+	IntegrateOplog(log *Oplog, isLocked bool) (bool, error)
+	GetPendingOplogs(setDB func(log *Oplog)) ([]*Oplog, []*Oplog, error)
+
+	RemoveNonSyncOplog(setDB func(log *Oplog), logID *types.PttID, isRetainValid bool, isLocked bool) (*Oplog, error)
+
+	SetOplogIsSync(log *Oplog) (bool, error)
 
 	// peers
 	IsMyDevice(peer *PttPeer) bool
@@ -83,7 +93,7 @@ type ProtocolManager interface {
 	GetNewestOpKey(isLocked bool) (*KeyInfo, error)
 	GetOldestOpKey(isLocked bool) (*KeyInfo, error)
 
-	RegisterOpKeyInfo(keyInfo *KeyInfo, isLocked bool) error
+	RegisterOpKeyInfo(keyInfo *KeyInfo, isLocked bool, isPttLocked bool) error
 
 	RemoveOpKeyInfoFromHash(hash *common.Address, isLocked bool) error
 	RemoveOpKeyInfo(keyInfo *KeyInfo, isLocked bool) error
@@ -121,7 +131,6 @@ type ProtocolManager interface {
 	ForceSyncCycle() time.Duration
 
 	QuitSync() chan struct{}
-	SetQuitSync(quitSync chan struct{})
 
 	SyncWG() *sync.WaitGroup
 
@@ -133,6 +142,13 @@ type ProtocolManager interface {
 
 	// db
 	DB() *pttdb.LDBBatch
+}
+
+type MyProtocolManager interface {
+	ProtocolManager
+
+	SetMeDB(log *Oplog)
+	IsValidOplog(signInfos []*SignInfo) (*types.PttID, uint32, bool)
 }
 
 type BaseProtocolManager struct {
@@ -226,6 +242,9 @@ func NewBaseProtocolManager(ptt Ptt, renewOpKeySeconds uint64, expireOpKeySecond
 		maxSyncRandomSeconds: maxSyncRandomSeconds,
 		minSyncRandomSeconds: minSyncRandomSeconds,
 
+		quitSync: make(chan struct{}),
+		syncWG:   ptt.SyncWG(),
+
 		// entity
 		entity: e,
 
@@ -264,8 +283,18 @@ func NewBaseProtocolManager(ptt Ptt, renewOpKeySeconds uint64, expireOpKeySecond
 
 }
 
+func (pm *BaseProtocolManager) HandleMessage(op OpType, dataBytes []byte, peer *PttPeer) error {
+	return types.ErrNotImplemented
+}
+
 func (pm *BaseProtocolManager) Start() error {
 	pm.isStart = true
+
+	return nil
+}
+
+func (pm *BaseProtocolManager) PreStop() error {
+	close(pm.quitSync)
 
 	return nil
 }

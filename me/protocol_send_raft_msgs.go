@@ -43,10 +43,10 @@ func (pm *ProtocolManager) SendRaftMsgs(msgs []pb.Message) error {
 		msgByPeers[msg.To] = append(origMsgByPeers, msg)
 	}
 
-	pm.LockMyNodes.RLock()
-	defer pm.LockMyNodes.RUnlock()
+	pm.lockMyNodes.RLock()
+	defer pm.lockMyNodes.RUnlock()
 
-	peers := pm.Peers().Peers()
+	peers := pm.Peers()
 	var data *SendRaftMsgs
 	for raftID, eachMsgs := range msgByPeers {
 		myNode := pm.MyNodes[raftID]
@@ -60,9 +60,8 @@ func (pm *ProtocolManager) SendRaftMsgs(msgs []pb.Message) error {
 			continue
 		}
 
-		peer := peers[*myNode.NodeID]
+		peer := peers.Peer(myNode.NodeID, false)
 		if peer == nil {
-			log.Debug("SendRaftMsgs: unable to send peer", "nodeID", myNode.NodeID)
 			continue
 		}
 
@@ -70,7 +69,7 @@ func (pm *ProtocolManager) SendRaftMsgs(msgs []pb.Message) error {
 			Msgs: eachMsgs,
 		}
 
-		pkgservice.PMSendDataToPeer(pm, SendRaftMsgsMsg, data, peer)
+		pm.SendDataToPeer(SendRaftMsgsMsg, data, peer)
 	}
 
 	return nil

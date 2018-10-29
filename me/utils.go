@@ -14,36 +14,27 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-pttai library. If not, see <http://www.gnu.org/licenses/>.
 
-package service
+package me
 
 import (
-	"github.com/ailabstw/go-pttai/common"
-	"github.com/ailabstw/go-pttai/common/types"
+	"crypto/ecdsa"
+	"encoding/hex"
+
+	"github.com/ailabstw/go-pttai/crypto"
 )
 
-type MyEntity interface {
-	GetID() *types.PttID
-	GetStatus() types.Status
+func renewMe(c *Config, newKey *ecdsa.PrivateKey, newPostfixBytes []byte) error {
+	err := c.RevokeKey()
+	if err != nil {
+		return err
+	}
 
-	Name() string
+	newKeyHex := hex.EncodeToString(crypto.FromECDSA(newKey))
 
-	NewOpKeyInfo(entityID *types.PttID) (*KeyInfo, error)
+	err = c.SetMyKey(newKeyHex, "", string(newPostfixBytes), true)
+	if err != nil {
+		return err
+	}
 
-	SignKey() *KeyInfo
-	GetNodeSignID() *types.PttID
-
-	IsValidInternalOplog(signInfos []*SignInfo) (*types.PttID, uint32, bool)
-}
-
-type PttMyEntity interface {
-	MyEntity
-
-	MyPM() MyProtocolManager
-
-	// join
-	GetJoinRequest(hash *common.Address) (*JoinRequest, error)
-	HandleApproveJoin(dataBytes []byte, hash *common.Address, joinRequest *JoinRequest, peer *PttPeer) error
-
-	// node
-	GetLenNodes() int
+	return nil
 }
