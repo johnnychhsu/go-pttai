@@ -14,38 +14,17 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-pttai library. If not, see <http://www.gnu.org/licenses/>.
 
-package me
+package content
 
-import (
-	"github.com/ailabstw/go-pttai/common/types"
-	"github.com/ailabstw/go-pttai/p2p/discover"
-)
+import "github.com/ailabstw/go-pttai/common/types"
 
-type BackendMyInfo struct {
-	V        types.Version
+type Member struct {
 	ID       *types.PttID
-	CreateTS types.Timestamp `json:"CT"`
 	UpdateTS types.Timestamp `json:"UT"`
+	DoerID   *types.PttID    `json:"DID"`
+	BoardID  *types.PttID    `json:"BID"`
+	Status   types.Status    `json:"S"`
+	Weight   uint32          `json:"w"`
 
-	Status types.Status `json:"S"`
-
-	RaftID uint64
-	NodeID *discover.NodeID
-}
-
-func MarshalBackendMyInfo(m *MyInfo) *BackendMyInfo {
-	if m == nil {
-		return nil
-	}
-
-	return &BackendMyInfo{
-		V:        m.V,
-		ID:       m.ID,
-		CreateTS: m.CreateTS,
-		UpdateTS: m.UpdateTS,
-		Status:   m.Status,
-
-		RaftID: MyRaftID,
-		NodeID: MyNodeID,
-	}
+	LogID *types.PttID `json:"l"`
 }

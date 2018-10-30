@@ -99,6 +99,7 @@ type ProtocolManager interface {
 	RemoveOpKeyInfo(keyInfo *KeyInfo, isLocked bool) error
 
 	OpKeyInfos() map[common.Address]*KeyInfo
+	OpKeyInfoList() []*KeyInfo
 
 	RenewOpKeySeconds() uint64
 	ExpireOpKeySeconds() uint64

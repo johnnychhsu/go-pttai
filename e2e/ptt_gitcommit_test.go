@@ -24,6 +24,8 @@ import (
 )
 
 func TestPttGitcommit(t *testing.T) {
+	NNodes = 1
+
 	assert := assert.New(t)
 
 	// setup test

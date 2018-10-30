@@ -65,6 +65,15 @@ func NewBackend(ctx *pkgservice.ServiceContext, cfg *Config, ptt *pkgservice.Bas
 	}
 	backend.BaseService = svc
 
+	if Me != nil {
+		return backend, nil
+	}
+
+	err = spm.CreateMe(contentBackend)
+	if err != nil {
+		return nil, err
+	}
+
 	return backend, nil
 }
 

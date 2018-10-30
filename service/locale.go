@@ -14,38 +14,35 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-pttai library. If not, see <http://www.gnu.org/licenses/>.
 
-package me
+package service
 
-import (
-	"github.com/ailabstw/go-pttai/common/types"
-	"github.com/ailabstw/go-pttai/p2p/discover"
+type Locale uint8
+
+const (
+	_ Locale = iota
+	LocaleTW
+	LocaleHK
+	LocaleCN
+	LocaleEN
+
+	NLocale
 )
 
-type BackendMyInfo struct {
-	V        types.Version
-	ID       *types.PttID
-	CreateTS types.Timestamp `json:"CT"`
-	UpdateTS types.Timestamp `json:"UT"`
+func LoadLocale() Locale {
+	value, err := dbMeta.Get(DBLocalePrefix)
+	if err != nil {
+		return DefaultLocale
+	}
 
-	Status types.Status `json:"S"`
+	if len(value) == 0 {
+		return DefaultLocale
+	}
 
-	RaftID uint64
-	NodeID *discover.NodeID
+	return Locale(value[0])
 }
 
-func MarshalBackendMyInfo(m *MyInfo) *BackendMyInfo {
-	if m == nil {
-		return nil
-	}
-
-	return &BackendMyInfo{
-		V:        m.V,
-		ID:       m.ID,
-		CreateTS: m.CreateTS,
-		UpdateTS: m.UpdateTS,
-		Status:   m.Status,
-
-		RaftID: MyRaftID,
-		NodeID: MyNodeID,
-	}
+func SetLocale(locale Locale) error {
+	CurrentLocale = locale
+	value := []byte{uint8(locale)}
+	return dbMeta.Put(DBLocalePrefix, value)
 }

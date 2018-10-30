@@ -32,7 +32,6 @@ func (spm *ServiceProtocolManager) GetMeList(contentBackend *content.Backend, st
 
 	meList := make([]*MyInfo, 0)
 	i := 0
-
 	var myInfo *MyInfo
 	for iter.Next() {
 		if limit > 0 && i >= limit {

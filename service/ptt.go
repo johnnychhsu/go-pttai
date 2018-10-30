@@ -176,9 +176,6 @@ type BasePtt struct {
 	// MeOplog
 	meOplogMerkle *Merkle
 
-	meOplogSub  *event.TypeMuxSubscription
-	meOplogsSub *event.TypeMuxSubscription
-
 	// MasterOplog
 	masterOplogMerkle *Merkle
 }
@@ -286,9 +283,6 @@ func (p *BasePtt) Stop() error {
 	p.peerWG.Wait()
 
 	// remove ptt-level chan
-
-	p.meOplogSub.Unsubscribe()
-	p.meOplogsSub.Unsubscribe()
 
 	p.eventMux.Stop()
 

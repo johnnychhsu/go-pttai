@@ -23,6 +23,7 @@ import (
 	"github.com/ailabstw/go-pttai/node"
 	"github.com/ailabstw/go-pttai/p2p/discover"
 	"github.com/ailabstw/go-pttai/pttdb"
+	pkgservice "github.com/ailabstw/go-pttai/service"
 )
 
 // config
@@ -135,6 +136,11 @@ func InitContent(dataDir string, keystoreDir string) error {
 	}
 
 	return nil
+}
+
+// default-title
+func DefaultTitle(myID *types.PttID, creatorID *types.PttID, myName string) []byte {
+	return localeInfos[pkgservice.CurrentLocale].DefaultTitle(myID, creatorID, myName)
 }
 
 func initMyInfo(id *types.PttID, nodeID *discover.NodeID) error {

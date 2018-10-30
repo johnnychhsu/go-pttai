@@ -130,8 +130,18 @@ func setupTest(t *testing.T) {
 		}
 	}
 
-	t.Logf("wait 12 seconds for node starting")
-	time.Sleep(12 * time.Second)
+	seconds := 0
+	switch {
+	case NNodes <= 3:
+		seconds = 5
+	case NNodes == 4:
+		seconds = 8
+	case NNodes == 5:
+		seconds = 10
+	}
+
+	t.Logf("wait %v seconds for node starting", seconds)
+	time.Sleep(time.Duration(seconds) * time.Second)
 }
 
 func teardownTest(t *testing.T) {

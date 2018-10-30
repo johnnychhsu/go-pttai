@@ -14,38 +14,42 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-pttai library. If not, see <http://www.gnu.org/licenses/>.
 
-package me
+package service
 
 import (
 	"github.com/ailabstw/go-pttai/common/types"
-	"github.com/ailabstw/go-pttai/p2p/discover"
+	"github.com/ailabstw/go-pttai/pttdb"
 )
 
-type BackendMyInfo struct {
-	V        types.Version
-	ID       *types.PttID
-	CreateTS types.Timestamp `json:"CT"`
-	UpdateTS types.Timestamp `json:"UT"`
-
-	Status types.Status `json:"S"`
-
-	RaftID uint64
-	NodeID *discover.NodeID
+type LRUCount struct {
+	*Count   `json:"C"`
+	MaxCount uint64     `json:"M"`
+	Full     types.Bool `json:"f"`
 }
 
-func MarshalBackendMyInfo(m *MyInfo) *BackendMyInfo {
-	if m == nil {
-		return nil
+func NewLRUCount(maxCount uint64, db *pttdb.LDBBatch, dbPrefixID *types.PttID, dbID *types.PttID, dbPrefix []byte, p uint, isNewBits bool) (*LRUCount, error) {
+	count, err := NewCount(db, dbPrefixID, dbID, dbPrefix, p, isNewBits)
+	if err != nil {
+		return nil, err
+	}
+	return &LRUCount{
+		Count:    count,
+		MaxCount: maxCount,
+	}, nil
+}
+
+func (l *LRUCount) IsFull() bool {
+	if l.Full {
+		return true
 	}
 
-	return &BackendMyInfo{
-		V:        m.V,
-		ID:       m.ID,
-		CreateTS: m.CreateTS,
-		UpdateTS: m.UpdateTS,
-		Status:   m.Status,
+	count := l.Count.Count()
+	if count >= l.MaxCount {
+		l.Full = true
+		l.Save()
 
-		RaftID: MyRaftID,
-		NodeID: MyNodeID,
+		return true
 	}
+
+	return false
 }

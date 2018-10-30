@@ -16,36 +16,36 @@
 
 package me
 
-import (
-	"github.com/ailabstw/go-pttai/common/types"
-	"github.com/ailabstw/go-pttai/p2p/discover"
-)
-
-type BackendMyInfo struct {
-	V        types.Version
-	ID       *types.PttID
-	CreateTS types.Timestamp `json:"CT"`
-	UpdateTS types.Timestamp `json:"UT"`
-
-	Status types.Status `json:"S"`
-
-	RaftID uint64
-	NodeID *discover.NodeID
+func (pm *ProtocolManager) LockMyNodes() {
+	pm.lockMyNodes.Lock()
 }
 
-func MarshalBackendMyInfo(m *MyInfo) *BackendMyInfo {
-	if m == nil {
-		return nil
+func (pm *ProtocolManager) UnlockMyNodes() {
+	pm.lockMyNodes.Unlock()
+}
+
+func (pm *ProtocolManager) RLockMyNodes() {
+	pm.lockMyNodes.RLock()
+}
+
+func (pm *ProtocolManager) RUnlockMyNodes() {
+	pm.lockMyNodes.RUnlock()
+}
+
+func (pm *ProtocolManager) GetMyNodeList(isLocked bool) []*MyNode {
+	if !isLocked {
+		pm.RLockMyNodes()
+		defer pm.RUnlockMyNodes()
 	}
 
-	return &BackendMyInfo{
-		V:        m.V,
-		ID:       m.ID,
-		CreateTS: m.CreateTS,
-		UpdateTS: m.UpdateTS,
-		Status:   m.Status,
+	myNodeList := make([]*MyNode, len(pm.MyNodes))
 
-		RaftID: MyRaftID,
-		NodeID: MyNodeID,
+	i := 0
+	for _, node := range pm.MyNodes {
+		myNodeList[i] = node
+
+		i++
 	}
+
+	return myNodeList
 }

@@ -186,9 +186,16 @@ var (
 	ExpireGenerateOplogMerkleTreeSeconds uint64 = 450               // 7.5 mins
 )
 
+// dial-history
 var (
 	ExpireDialHistorySeconds = uint64(30)
 	DialHistoryLoopInterval  = 30 * time.Second
+)
+
+// locale
+var (
+	DefaultLocale Locale = LocaleTW
+	CurrentLocale Locale
 )
 
 func InitService(dataDir string) error {

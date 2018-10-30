@@ -22,7 +22,6 @@ import (
 
 	"github.com/ailabstw/go-pttai/common/types"
 	"github.com/ailabstw/go-pttai/content"
-	"github.com/ailabstw/go-pttai/log"
 	pkgservice "github.com/ailabstw/go-pttai/service"
 )
 
@@ -57,7 +56,6 @@ func (spm *ServiceProtocolManager) CreateMe(contentBackend *content.Backend) err
 }
 
 func (pm *ProtocolManager) CreateFullMe(oplog *pkgservice.MasterOplog) error {
-	log.Debug("CreateFullMe: start")
 	myInfo := pm.Entity().(*MyInfo)
 	ptt := pm.myPtt
 
@@ -80,7 +78,6 @@ func (pm *ProtocolManager) CreateFullMe(oplog *pkgservice.MasterOplog) error {
 	if err != nil {
 		return err
 	}
-	log.Debug("CreateFullMe: after CreateMeOplog", "masterLogID", meOplog.MasterLogID)
 
 	// my-info
 	myInfo.Status = types.StatusAlive

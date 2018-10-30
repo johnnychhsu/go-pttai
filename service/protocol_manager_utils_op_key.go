@@ -298,6 +298,21 @@ func (pm *BaseProtocolManager) OpKeyInfos() map[common.Address]*KeyInfo {
 	return pm.opKeyInfos
 }
 
+func (pm *BaseProtocolManager) OpKeyInfoList() []*KeyInfo {
+	pm.lockOpKeyInfo.RLock()
+	defer pm.lockOpKeyInfo.RUnlock()
+
+	lenOpKeyInfos := len(pm.opKeyInfos)
+	opKeyInfoList := make([]*KeyInfo, lenOpKeyInfos)
+	i := 0
+	for _, keyInfo := range pm.opKeyInfos {
+		opKeyInfoList[i] = keyInfo
+		i++
+	}
+
+	return opKeyInfoList
+}
+
 func (pm *BaseProtocolManager) RenewOpKeySeconds() uint64 {
 	return pm.renewOpKeySeconds
 }

@@ -17,6 +17,7 @@
 package service
 
 import (
+	"github.com/ailabstw/go-pttai/common/types"
 	"github.com/ailabstw/go-pttai/rpc"
 )
 
@@ -69,4 +70,36 @@ func (svc *BaseService) SPM() ServiceProtocolManager {
 
 func (svc *BaseService) Ptt() Ptt {
 	return svc.ptt
+}
+
+func (b *BaseService) GetJoinKeyInfos(entityIDBytes []byte) ([]*KeyInfo, error) {
+	entityID := &types.PttID{}
+	err := entityID.UnmarshalText(entityIDBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	entity := b.SPM().Entity(entityID)
+	if entity == nil {
+		return nil, types.ErrInvalidID
+	}
+
+	pm := entity.PM()
+	return pm.JoinKeyInfos(), nil
+}
+
+func (b *BaseService) GetOpKeyInfos(entityIDBytes []byte) ([]*KeyInfo, error) {
+	entityID := &types.PttID{}
+	err := entityID.UnmarshalText(entityIDBytes)
+	if err != nil {
+		return nil, err
+	}
+
+	entity := b.SPM().Entity(entityID)
+	if entity == nil {
+		return nil, types.ErrInvalidID
+	}
+
+	pm := entity.PM()
+	return pm.OpKeyInfoList(), nil
 }

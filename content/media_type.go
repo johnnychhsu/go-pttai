@@ -14,38 +14,32 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-pttai library. If not, see <http://www.gnu.org/licenses/>.
 
-package me
+package content
 
-import (
-	"github.com/ailabstw/go-pttai/common/types"
-	"github.com/ailabstw/go-pttai/p2p/discover"
+type MediaType uint8
+
+const (
+	MediaTypeJPEG MediaType = iota
+	MediaTypeGIF
+	MediaTypePNG
+	MediaTypeFile
 )
 
-type BackendMyInfo struct {
-	V        types.Version
-	ID       *types.PttID
-	CreateTS types.Timestamp `json:"CT"`
-	UpdateTS types.Timestamp `json:"UT"`
-
-	Status types.Status `json:"S"`
-
-	RaftID uint64
-	NodeID *discover.NodeID
+type MediaDataJPEG struct {
+	Width  uint16 `json:"W"`
+	Height uint16 `json:"H"`
 }
 
-func MarshalBackendMyInfo(m *MyInfo) *BackendMyInfo {
-	if m == nil {
-		return nil
-	}
+type MediaDataPNG struct {
+	Width  uint16 `json:"W"`
+	Height uint16 `json:"H"`
+}
 
-	return &BackendMyInfo{
-		V:        m.V,
-		ID:       m.ID,
-		CreateTS: m.CreateTS,
-		UpdateTS: m.UpdateTS,
-		Status:   m.Status,
+type MediaDataGIF struct {
+	Width  uint16 `json:"W"`
+	Height uint16 `json:"H"`
+}
 
-		RaftID: MyRaftID,
-		NodeID: MyNodeID,
-	}
+type MediaDataFile struct {
+	Filename []byte `json:"f"`
 }

@@ -28,18 +28,19 @@ type SyncOplogNewOplogs struct {
 	MyNewKeys [][]byte `json:"K"`
 }
 
-func (pm *BaseProtocolManager) SyncOplogNewOplogsCore(
+func (pm *BaseProtocolManager) SyncOplogNewOplogs(
 	syncOplogAck *SyncOplogAck,
 	myNewKeys [][]byte,
 	theirNewKeys [][]byte,
 	getOplogsFromKeys func([][]byte) ([]*Oplog, error),
 	setNewestOplog func(log *Oplog) error,
+	postProcess func() error,
 	newLogsMsg OpType,
 	peer *PttPeer) error {
 
 	theirNewLogs, err := getOplogsFromKeys(theirNewKeys)
 	if err != nil {
-		return err
+		return postProcess()
 	}
 
 	if len(theirNewLogs) == 0 && len(myNewKeys) == 0 {
