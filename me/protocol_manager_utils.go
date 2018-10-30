@@ -200,11 +200,11 @@ func (pm *ProtocolManager) nodeTypeToWeight(nodeType pkgservice.NodeType) uint32
 
 	switch nodeType {
 	case pkgservice.NodeTypeServer:
-		return 10000
+		return WeightServer
 	case pkgservice.NodeTypeDesktop:
-		return 100
+		return WeightDesktop
 	case pkgservice.NodeTypeMobile:
-		return 1
+		return WeightMobile
 	}
 
 	return 0

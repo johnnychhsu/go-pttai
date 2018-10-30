@@ -14,15 +14,37 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-pttai library. If not, see <http://www.gnu.org/licenses/>.
 
-package me
+package service
 
-import pkgservice "github.com/ailabstw/go-pttai/service"
+import (
+	"github.com/ailabstw/go-pttai/common/types"
+	"github.com/ailabstw/go-pttai/p2p/discover"
+)
 
-// It's possible that we have multiple ids due to multi-device setup.
-// Requiring per-entity-level oplog, not unique MeOplog / MasterOplog / PttOplog in ptt-layer
+const (
+	_ OpType = iota
+	PttOpTypeCreateMe
+	PttOpTypeCreateArticle
+	PttOpTypeCreateComment
+	PttOpTypeCreateReply
+)
 
-func (pm *ProtocolManager) SetMeDB(log *pkgservice.Oplog) {
-	myID := pm.Entity().GetID()
-	myPtt := pm.myPtt
-	log.SetDB(myPtt.DBOplog(), myID, pkgservice.DBMeOplogPrefix, pkgservice.DBMeIdxOplogPrefix, pkgservice.DBMeMerkleOplogPrefix, pkgservice.DBMeLockMap)
+type PttOpCreateMe struct {
+	NodeID *discover.NodeID `json:"ID"`
+}
+
+type PttOpCreateArticle struct {
+	BoardID *types.PttID `json:"bID"`
+	Title   []byte       `json:"T"`
+}
+
+type PttOpCreateComment struct {
+	BoardID   *types.PttID `json:"bID"`
+	ArticleID *types.PttID `json:"aID"`
+}
+
+type PttOpCreateReply struct {
+	BoardID   *types.PttID `json:"bID"`
+	ArticleID *types.PttID `json:"aID"`
+	CommentID *types.PttID `json:"cID"`
 }

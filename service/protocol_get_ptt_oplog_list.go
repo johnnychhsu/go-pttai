@@ -14,15 +14,28 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-pttai library. If not, see <http://www.gnu.org/licenses/>.
 
-package me
+package service
 
-import pkgservice "github.com/ailabstw/go-pttai/service"
+import (
+	"github.com/ailabstw/go-pttai/common/types"
+	"github.com/ailabstw/go-pttai/pttdb"
+)
 
-// It's possible that we have multiple ids due to multi-device setup.
-// Requiring per-entity-level oplog, not unique MeOplog / MasterOplog / PttOplog in ptt-layer
+/*
+ gets the PttOplogs specifically from myEntity.
+*/
+func (p *BasePtt) GetPttOplogList(logID *types.PttID, limit int, listOrder pttdb.ListOrder, status types.Status) ([]*PttOplog, error) {
 
-func (pm *ProtocolManager) SetMeDB(log *pkgservice.Oplog) {
-	myID := pm.Entity().GetID()
-	myPtt := pm.myPtt
-	log.SetDB(myPtt.DBOplog(), myID, pkgservice.DBMeOplogPrefix, pkgservice.DBMeIdxOplogPrefix, pkgservice.DBMeMerkleOplogPrefix, pkgservice.DBMeLockMap)
+	log := &Oplog{}
+	pm := p.myEntity.MyPM()
+	pm.SetPttDB(log)
+
+	logs, err := pm.GetOplogList(log, logID, limit, listOrder, status, false)
+	if err != nil {
+		return nil, err
+	}
+
+	pttOplogs := OplogsToPttOplogs(logs)
+
+	return pttOplogs, nil
 }

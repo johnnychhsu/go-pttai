@@ -103,6 +103,47 @@ func (pm *BaseProtocolManager) GetOplogList(log *Oplog, startID *types.PttID, li
 	return logs, nil
 }
 
+func (pm *BaseProtocolManager) GetOplogMerkleNodeList(merkle *Merkle, level MerkleTreeLevel, startKey []byte, limit int, listOrder pttdb.ListOrder) ([]*MerkleNode, error) {
+
+	var err error
+	if len(startKey) == 0 {
+		startKey, err = merkle.MarshalKey(level, types.ZeroTimestamp)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	iter, err := merkle.GetMerkleIterByKey(startKey, level, listOrder)
+	if err != nil {
+		return nil, err
+	}
+	defer iter.Release()
+
+	i := 0
+	results := make([]*MerkleNode, 0)
+	for iter.Next() {
+		if limit > 0 && i == limit {
+			break
+		}
+
+		val := iter.Value()
+
+		eachMerkleNode := &MerkleNode{}
+		err := eachMerkleNode.Unmarshal(val)
+
+		if err != nil {
+			continue
+		}
+
+		results = append(results, eachMerkleNode)
+
+		i++
+	}
+
+	return results, nil
+
+}
+
 func (pm *BaseProtocolManager) BroadcastOplog(log *Oplog, msg OpType, pendingMsg OpType) error {
 
 	// extras

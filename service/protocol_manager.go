@@ -52,10 +52,13 @@ type ProtocolManager interface {
 	BroadcastOplog(log *Oplog, msg OpType, pendingMsg OpType) error
 	BroadcastOplogs(logs []*Oplog, msg OpType, pendingMsg OpType) error
 
-	GetOplogsFromKeys(setDB func(log *Oplog), keys [][]byte) ([]*Oplog, error)
-
 	IntegrateOplog(log *Oplog, isLocked bool) (bool, error)
+
+	GetOplogsFromKeys(setDB func(log *Oplog), keys [][]byte) ([]*Oplog, error)
+	GetOplogList(log *Oplog, startID *types.PttID, limit int, listOrder pttdb.ListOrder, status types.Status, isLocked bool) ([]*Oplog, error)
 	GetPendingOplogs(setDB func(log *Oplog)) ([]*Oplog, []*Oplog, error)
+
+	GetOplogMerkleNodeList(merkle *Merkle, level MerkleTreeLevel, startKey []byte, limit int, listOrder pttdb.ListOrder) ([]*MerkleNode, error)
 
 	RemoveNonSyncOplog(setDB func(log *Oplog), logID *types.PttID, isRetainValid bool, isLocked bool) (*Oplog, error)
 
@@ -148,7 +151,13 @@ type ProtocolManager interface {
 type MyProtocolManager interface {
 	ProtocolManager
 
+	// It's possible that we have multiple ids due to multi-device setup.
+	// Requiring per-entity-level oplog, not unique MeOplog / MasterOplog / PttOplog in ptt-layer
+
 	SetMeDB(log *Oplog)
+	SetMasterDB(log *Oplog)
+	SetPttDB(log *Oplog)
+
 	IsValidOplog(signInfos []*SignInfo) (*types.PttID, uint32, bool)
 }
 

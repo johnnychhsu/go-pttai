@@ -161,6 +161,13 @@ const (
 	RaftMaxInflightMsgs = 16
 )
 
+// weight
+const (
+	WeightServer  = 10000
+	WeightDesktop = 100
+	WeightMobile  = 1
+)
+
 // init-me-info
 
 const (

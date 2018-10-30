@@ -16,20 +16,18 @@
 
 package service
 
+import (
+	"github.com/ailabstw/go-pttai/common"
+	"github.com/ailabstw/go-pttai/common/types"
+	"github.com/ailabstw/go-pttai/pttdb"
+)
+
 type PrivateAPI struct {
 	p *BasePtt
 }
 
 func NewPrivateAPI(p *BasePtt) *PrivateAPI {
 	return &PrivateAPI{p}
-}
-
-func (api *PrivateAPI) CountPeers() (*BackendCountPeers, error) {
-	return api.p.CountPeers()
-}
-
-func (api *PrivateAPI) GetPeers() ([]*BackendPeer, error) {
-	return api.p.BEGetPeers()
 }
 
 func (api *PrivateAPI) GetVersion() (string, error) {
@@ -46,4 +44,106 @@ func (api *PrivateAPI) Shutdown() (bool, error) {
 
 func (api *PrivateAPI) Restart() (bool, error) {
 	return api.p.Restart()
+}
+
+/**********
+ * Peer
+ **********/
+
+func (api *PrivateAPI) CountPeers() (*BackendCountPeers, error) {
+	return api.p.CountPeers()
+}
+
+func (api *PrivateAPI) GetPeers() ([]*BackendPeer, error) {
+	return api.p.BEGetPeers()
+}
+
+/**********
+ * Entities
+ **********/
+
+func (api *PrivateAPI) CountEntities() (int, error) {
+	return api.p.CountEntities()
+}
+
+/**********
+ * Join
+ **********/
+
+func (api *PrivateAPI) GetJoins() (map[common.Address]*types.PttID, error) {
+	return api.p.GetJoins(), nil
+
+}
+
+func (api *PrivateAPI) GetConfirmJoins() ([]*BackendConfirmJoin, error) {
+	return api.p.GetConfirmJoins()
+}
+
+/**********
+ * Op
+ **********/
+
+func (api *PrivateAPI) GetOps() (map[common.Address]*types.PttID, error) {
+	return api.p.GetOps(), nil
+}
+
+/**********
+ * MeOplog
+ **********/
+
+func (api *PrivateAPI) GetMeOplogList(logID string, limit int, listOrder pttdb.ListOrder) ([]*MeOplog, error) {
+	return api.p.BEGetMeOplogList([]byte(logID), limit, listOrder)
+}
+
+func (api *PrivateAPI) GetPendingMeOplogMasterList(logID string, limit int, listOrder pttdb.ListOrder) ([]*MeOplog, error) {
+	return api.p.BEGetPendingMeOplogMasterList([]byte(logID), limit, listOrder)
+}
+
+func (api *PrivateAPI) GetPendingMeOplogInternalList(logID string, limit int, listOrder pttdb.ListOrder) ([]*MeOplog, error) {
+	return api.p.BEGetPendingMeOplogInternalList([]byte(logID), limit, listOrder)
+}
+
+func (api *PrivateAPI) GetMeOplogMerkleNodeList(level uint8, startKey []byte, limit int, listOrder pttdb.ListOrder) ([]*BackendMerkleNode, error) {
+	return api.p.BEGetMeOplogMerkleNodeList(MerkleTreeLevel(level), startKey, limit, listOrder)
+}
+
+/**********
+ * MasterOplog
+ **********/
+
+func (api *PrivateAPI) GetMasterOplogList(logID string, limit int, listOrder pttdb.ListOrder) ([]*MasterOplog, error) {
+	return api.p.BEGetMasterOplogList([]byte(logID), limit, listOrder)
+}
+
+func (api *PrivateAPI) GetMasterOplogMerkleNodeList(level uint8, startKey []byte, limit int, listOrder pttdb.ListOrder) ([]*BackendMerkleNode, error) {
+	return api.p.BEGetMasterOplogMerkleNodeList(MerkleTreeLevel(level), startKey, limit, listOrder)
+}
+
+/**********
+ * PttOplog
+ **********/
+
+func (api *PrivateAPI) GetPttOplogList(logID string, limit int, listOrder pttdb.ListOrder) ([]*PttOplog, error) {
+	return api.p.BEGetPttOplogList([]byte(logID), limit, listOrder)
+}
+
+func (api *PrivateAPI) MarkPttOplogSeen() (types.Timestamp, error) {
+	return api.p.MarkPttOplogSeen()
+}
+
+func (api *PrivateAPI) GetPttOplogSeen() (types.Timestamp, error) {
+	return api.p.GetPttOplogSeen()
+}
+
+/**********
+ * Locale
+ **********/
+
+func (api *PrivateAPI) SetLocale(locale Locale) (Locale, error) {
+	err := SetLocale(locale)
+	return CurrentLocale, err
+}
+
+func (api *PrivateAPI) GetLocale() (Locale, error) {
+	return CurrentLocale, nil
 }

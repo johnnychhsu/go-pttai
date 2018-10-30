@@ -21,8 +21,8 @@ import pkgservice "github.com/ailabstw/go-pttai/service"
 // It's possible that we have multiple ids due to multi-device setup.
 // Requiring per-entity-level oplog, not unique MeOplog / MasterOplog / PttOplog in ptt-layer
 
-func (pm *ProtocolManager) SetMeDB(log *pkgservice.Oplog) {
+func (pm *ProtocolManager) SetMasterDB(log *pkgservice.Oplog) {
 	myID := pm.Entity().GetID()
 	myPtt := pm.myPtt
-	log.SetDB(myPtt.DBOplog(), myID, pkgservice.DBMeOplogPrefix, pkgservice.DBMeIdxOplogPrefix, pkgservice.DBMeMerkleOplogPrefix, pkgservice.DBMeLockMap)
+	log.SetDB(myPtt.DBOplog(), myID, pkgservice.DBMasterOplogPrefix, pkgservice.DBMasterIdxOplogPrefix, pkgservice.DBMasterMerkleOplogPrefix, pkgservice.DBMasterLockMap)
 }

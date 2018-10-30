@@ -44,4 +44,23 @@ func TestMeBasic(t *testing.T) {
 	testCore(t0, bodyString, me0_1, t, true)
 
 	assert.Equal(types.StatusAlive, me0_1.Status)
+
+	// 2. get total weight
+	bodyString = `{"id": "testID", "method": "me_getTotalWeight", "params": []}`
+
+	var totalWeigtht0_2 uint32
+	testCore(t0, bodyString, &totalWeigtht0_2, t, true)
+
+	assert.Equal(uint32(me.WeightDesktop), totalWeigtht0_2)
+
+	// 3. getRawMe
+	bodyString = `{"id": "testID", "method": "me_getRawMe", "params": []}`
+
+	me0_3 := &me.MyInfo{}
+
+	testCore(t0, bodyString, me0_3, t, true)
+
+	assert.Equal(types.StatusAlive, me0_3.Status)
+	assert.Equal(me0_1.ID, me0_3.ID)
+	assert.Equal(me0_3.ID, me0_3.OwnerID)
 }

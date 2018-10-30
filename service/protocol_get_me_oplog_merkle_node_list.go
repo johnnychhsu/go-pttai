@@ -14,15 +14,13 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with the go-pttai library. If not, see <http://www.gnu.org/licenses/>.
 
-package me
+package service
 
-import pkgservice "github.com/ailabstw/go-pttai/service"
+import "github.com/ailabstw/go-pttai/pttdb"
 
-// It's possible that we have multiple ids due to multi-device setup.
-// Requiring per-entity-level oplog, not unique MeOplog / MasterOplog / PttOplog in ptt-layer
+func (p *BasePtt) GetMeOplogMerkleNodeList(level MerkleTreeLevel, startKey []byte, limit int, listOrder pttdb.ListOrder) ([]*MerkleNode, error) {
 
-func (pm *ProtocolManager) SetMeDB(log *pkgservice.Oplog) {
-	myID := pm.Entity().GetID()
-	myPtt := pm.myPtt
-	log.SetDB(myPtt.DBOplog(), myID, pkgservice.DBMeOplogPrefix, pkgservice.DBMeIdxOplogPrefix, pkgservice.DBMeMerkleOplogPrefix, pkgservice.DBMeLockMap)
+	pm := p.myEntity.MyPM()
+
+	return pm.GetOplogMerkleNodeList(p.meOplogMerkle, level, startKey, limit, listOrder)
 }

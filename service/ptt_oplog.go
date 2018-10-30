@@ -18,30 +18,33 @@ package service
 
 import "github.com/ailabstw/go-pttai/common/types"
 
-type MasterOplog struct {
+type PttOplog struct {
 	*Oplog `json:"O"`
 }
 
-func NewMasterOplog(id *types.PttID, ts types.Timestamp, doerID *types.PttID, op OpType, data interface{}) (*MasterOplog, error) {
+func NewPttOplog(objID *types.PttID, ts types.Timestamp, doerID *types.PttID, op OpType, data interface{}, myID *types.PttID) (*PttOplog, error) {
 
-	log, err := NewOplog(id, ts, doerID, op, data, dbOplog, id, DBMasterOplogPrefix, DBMasterIdxOplogPrefix, DBMasterMerkleOplogPrefix, DBMasterLockMap)
+	oplog, err := NewOplog(objID, ts, doerID, op, data, dbOplog, myID, DBPttOplogPrefix, DBPttIdxOplogPrefix, DBPttMerkleOplogPrefix, DBPttLockMap)
 	if err != nil {
 		return nil, err
 	}
-	return &MasterOplog{
-		Oplog: log,
+	oplog.IsSync = false
+	oplog.MasterLogID = objID
+
+	return &PttOplog{
+		Oplog: oplog,
 	}, nil
 }
 
-func OplogsToMasterOplogs(logs []*Oplog) []*MasterOplog {
-	typedLogs := make([]*MasterOplog, len(logs))
+func OplogsToPttOplogs(logs []*Oplog) []*PttOplog {
+	typedLogs := make([]*PttOplog, len(logs))
 	for i, log := range logs {
-		typedLogs[i] = &MasterOplog{Oplog: log}
+		typedLogs[i] = &PttOplog{Oplog: log}
 	}
 	return typedLogs
 }
 
-func MasterOplogsToOplogs(typedLogs []*MasterOplog) []*Oplog {
+func PttOplogsToOplogs(typedLogs []*PttOplog) []*Oplog {
 	logs := make([]*Oplog, len(typedLogs))
 	for i, log := range typedLogs {
 		logs[i] = log.Oplog
