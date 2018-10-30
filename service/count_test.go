@@ -21,8 +21,8 @@ import (
 	"sync"
 	"testing"
 
-	"gitlab.corp.ailabs.tw/ptt.ai/go-pttai/common/types"
-	"gitlab.corp.ailabs.tw/ptt.ai/go-pttai/pttdb"
+	"github.com/ailabstw/go-pttai/common/types"
+	"github.com/ailabstw/go-pttai/pttdb"
 )
 
 func TestCount_Add(t *testing.T) {
