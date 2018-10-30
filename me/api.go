@@ -146,6 +146,10 @@ func (api *PublicAPI) Get() (*BackendMyInfo, error) {
 	return api.b.Get()
 }
 
+func (api *PublicAPI) GetMeList() ([]*BackendMyInfo, error) {
+	return api.b.GetMeList()
+}
+
 func (api *PublicAPI) ShowURL() (*pkgservice.BackendJoinURL, error) {
 	return api.b.ShowURL()
 }

@@ -114,6 +114,7 @@ func NewProtocolManager(myInfo *MyInfo, ptt pkgservice.MyPtt) (*ProtocolManager,
 func (pm *ProtocolManager) Start() error {
 
 	// start
+	log.Debug("Start: start", "me", pm.Entity().GetID())
 	err := pm.BaseProtocolManager.Start()
 	if err != nil {
 		return err

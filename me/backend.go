@@ -21,6 +21,7 @@ import (
 	"github.com/ailabstw/go-pttai/content"
 	"github.com/ailabstw/go-pttai/friend"
 	"github.com/ailabstw/go-pttai/log"
+	"github.com/ailabstw/go-pttai/rpc"
 	pkgservice "github.com/ailabstw/go-pttai/service"
 )
 
@@ -92,6 +93,21 @@ func (b *Backend) Stop() error {
 	log.Debug("Stop: after TeardownMe")
 
 	return nil
+}
+
+func (b *Backend) APIs() []rpc.API {
+	return []rpc.API{
+		{
+			Namespace: "me",
+			Version:   "1.0",
+			Service:   NewPrivateAPI(b),
+		},
+		{
+			Namespace: "me",
+			Version:   "1.0",
+			Service:   NewPublicAPI(b),
+		},
+	}
 }
 
 func (b *Backend) Name() string {

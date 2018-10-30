@@ -171,8 +171,6 @@ type BasePtt struct {
 	myEntity PttMyEntity
 	myNodeID *discover.NodeID // ptt knows only my-node-id
 
-	meSub *event.TypeMuxSubscription
-
 	// MeOplog
 	meOplogMerkle *Merkle
 
@@ -189,6 +187,7 @@ func NewPtt(ctx *ServiceContext, cfg *Config, myNodeID *discover.NodeID) (*BaseP
 
 		myNodeID: myNodeID,
 
+		// event-mux
 		eventMux: new(event.TypeMux),
 
 		notifyNodeRestart: types.NewChan(1),
@@ -205,6 +204,16 @@ func NewPtt(ctx *ServiceContext, cfg *Config, myNodeID *discover.NodeID) (*BaseP
 		userPeerMap: make(map[types.PttID]*discover.NodeID),
 
 		dialHist: NewDialHistory(),
+
+		// entities
+		entities: make(map[types.PttID]Entity),
+
+		// joins
+		joins:        make(map[common.Address]*types.PttID),
+		confirmJoins: make(map[string]*ConfirmJoin),
+
+		// ops
+		ops: make(map[common.Address]*types.PttID),
 
 		// sync
 		quitSync: make(chan struct{}),

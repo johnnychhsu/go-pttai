@@ -73,15 +73,11 @@ func NewBaseServiceProtocolManager(ptt Ptt, service Service) (*BaseServiceProtoc
 }
 
 func (spm *BaseServiceProtocolManager) Start() error {
-	return nil
+	return spm.StartEntities()
 }
 
 func (spm *BaseServiceProtocolManager) Stop() error {
-	return nil
-}
-
-func (spm *BaseServiceProtocolManager) Entities() map[types.PttID]Entity {
-	return spm.entities
+	return spm.StopEntities()
 }
 
 func (spm *BaseServiceProtocolManager) Ptt() Ptt {
@@ -90,49 +86,4 @@ func (spm *BaseServiceProtocolManager) Ptt() Ptt {
 
 func (spm *BaseServiceProtocolManager) Service() Service {
 	return spm.service
-}
-
-func (spm *BaseServiceProtocolManager) Entity(id *types.PttID) Entity {
-	spm.lock.RLock()
-	defer spm.lock.RUnlock()
-
-	entity, ok := spm.entities[*id]
-	if !ok {
-		return nil
-	}
-	return entity
-}
-
-/*
-RegisterEntity register the entity to the service
-
-need to do lock in the beginning because need to update entitiesByPeerID
-*/
-func (spm *BaseServiceProtocolManager) RegisterEntity(id *types.PttID, e Entity) error {
-	spm.lock.Lock()
-	defer spm.lock.Unlock()
-
-	_, ok := spm.entities[*id]
-	if ok {
-		return ErrEntityAlreadyRegistered
-	}
-
-	spm.entities[*id] = e
-	e.PM().SetNoMorePeers(spm.noMorePeers)
-
-	return nil
-}
-
-func (spm *BaseServiceProtocolManager) UnregisterEntity(id *types.PttID) error {
-	spm.lock.Lock()
-	defer spm.lock.Unlock()
-
-	_, ok := spm.entities[*id]
-	if !ok {
-		return ErrEntityNotRegistered
-	}
-
-	delete(spm.entities, *id)
-
-	return nil
 }

@@ -227,3 +227,16 @@ func (b *Backend) ForceRemoveNode(nodeIDStr string) (bool, error) {
 	err = pm.ForceProposeRaftRemoveNode(&nodeID)
 	return false, err
 }
+
+func (b *Backend) GetMeList() ([]*BackendMyInfo, error) {
+	entities := b.SPM().Entities()
+
+	myInfoList := make([]*BackendMyInfo, 0, len(entities))
+	var myInfo *BackendMyInfo
+	for _, entity := range entities {
+		myInfo = MarshalBackendMyInfo(entity.(*MyInfo))
+		myInfoList = append(myInfoList, myInfo)
+	}
+
+	return myInfoList, nil
+}
